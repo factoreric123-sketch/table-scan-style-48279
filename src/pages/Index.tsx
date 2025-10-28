@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bookmark, Share2, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CategoryNav from "@/components/CategoryNav";
 import SubcategoryNav from "@/components/SubcategoryNav";
 import MenuGrid from "@/components/MenuGrid";
+import RestaurantHeader from "@/components/RestaurantHeader";
 import { menuData, categories, subcategories } from "@/data/menuData";
 
 const Index = () => {
@@ -15,6 +16,14 @@ const Index = () => {
   );
 
   const currentSubcategories = subcategories[activeCategory as keyof typeof subcategories] || [];
+
+  // Update subcategory when category changes
+  useEffect(() => {
+    const newSubcategories = subcategories[activeCategory as keyof typeof subcategories] || [];
+    if (newSubcategories.length > 0) {
+      setActiveSubcategory(newSubcategories[0]);
+    }
+  }, [activeCategory]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -40,6 +49,12 @@ const Index = () => {
           </div>
         </div>
 
+        {/* Restaurant Header */}
+        <RestaurantHeader 
+          name="Balzem Restaurant"
+          tagline="Mediterranean Cuisine"
+        />
+
         {/* Category Navigation */}
         <CategoryNav 
           categories={categories}
@@ -59,10 +74,7 @@ const Index = () => {
 
       {/* Main Content */}
       <main>
-        <div className="pt-4">
-          <h2 className="text-2xl font-bold px-6 mb-4">{activeSubcategory}</h2>
-          <MenuGrid dishes={filteredDishes} />
-        </div>
+        <MenuGrid dishes={filteredDishes} />
       </main>
 
       {/* Footer */}

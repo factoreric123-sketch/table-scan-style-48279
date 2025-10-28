@@ -4,7 +4,7 @@ export interface Dish {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price: string;
   image: string;
   isNew?: boolean;
   category: string;
@@ -23,11 +23,12 @@ const DishCard = ({ dish }: DishCardProps) => {
           New Addition
         </Badge>
       )}
-      <div className="bg-dish-card rounded-xl overflow-hidden aspect-square mb-3 relative">
+      <div className="bg-dish-card rounded-xl overflow-hidden aspect-square mb-3 relative shadow-sm">
         <img 
           src={dish.image} 
-          alt={dish.name}
+          alt={`${dish.name} - ${dish.description}`}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
         />
       </div>
       <div className="px-1">

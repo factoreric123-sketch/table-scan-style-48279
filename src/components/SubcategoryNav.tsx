@@ -6,17 +6,18 @@ interface SubcategoryNavProps {
 
 const SubcategoryNav = ({ subcategories, activeSubcategory, onSubcategoryChange }: SubcategoryNavProps) => {
   return (
-    <nav className="flex gap-6 overflow-x-auto px-6 pb-4 scrollbar-hide border-b border-border">
+    <nav className="flex gap-8 overflow-x-auto px-4 pb-3 scrollbar-hide">
       {subcategories.map((subcategory) => (
         <button
           key={subcategory}
           onClick={() => onSubcategoryChange(subcategory)}
           className={`
-            text-sm font-semibold uppercase tracking-wide whitespace-nowrap pb-2 transition-all
+            text-xs font-bold uppercase tracking-wider whitespace-nowrap pb-3 transition-all relative
             ${activeSubcategory === subcategory 
-              ? 'text-foreground border-b-2 border-foreground' 
+              ? 'text-foreground' 
               : 'text-muted-foreground hover:text-foreground'
             }
+            ${activeSubcategory === subcategory ? 'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-foreground' : ''}
           `}
         >
           {subcategory}

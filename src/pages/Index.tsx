@@ -27,42 +27,43 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background border-b border-border">
-        <div className="flex items-center justify-between px-6 py-4">
-          <Button variant="ghost" size="icon">
+      {/* Top Action Bar */}
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+          <Button variant="ghost" size="icon" className="h-9 w-9">
             <Menu className="h-5 w-5" />
           </Button>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="text-foreground">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="text-foreground text-xs h-8 px-3">
               CONNECT
             </Button>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="h-9 w-9">
               <Bookmark className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="h-9 w-9">
               <Share2 className="h-5 w-5" />
             </Button>
-            <Button variant="outline" size="sm" className="text-foreground border-border">
+            <Button variant="outline" size="sm" className="text-foreground border-border text-xs h-8 px-3">
               SIGN UP
             </Button>
           </div>
         </div>
+      </header>
 
-        {/* Restaurant Header */}
-        <RestaurantHeader 
-          name="Balzem Restaurant"
-          tagline="Mediterranean Cuisine"
-        />
+      {/* Restaurant Hero */}
+      <RestaurantHeader 
+        name="balzem"
+        tagline="Mediterranean Cuisine"
+      />
 
-        {/* Category Navigation */}
+      {/* Category & Subcategory Navigation */}
+      <div className="sticky top-[57px] z-40 bg-background border-b border-border">
         <CategoryNav 
           categories={categories}
           activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
         />
 
-        {/* Subcategory Navigation */}
         {currentSubcategories.length > 0 && (
           <SubcategoryNav
             subcategories={currentSubcategories}
@@ -70,11 +71,11 @@ const Index = () => {
             onSubcategoryChange={setActiveSubcategory}
           />
         )}
-      </header>
+      </div>
 
       {/* Main Content */}
       <main>
-        <MenuGrid dishes={filteredDishes} />
+        <MenuGrid dishes={filteredDishes} sectionTitle={activeSubcategory} />
       </main>
 
       {/* Footer */}

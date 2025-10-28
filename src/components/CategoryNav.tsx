@@ -8,16 +8,16 @@ interface CategoryNavProps {
 
 const CategoryNav = ({ categories, activeCategory, onCategoryChange }: CategoryNavProps) => {
   return (
-    <nav className="flex gap-3 overflow-x-auto pb-4 pt-6 px-6 scrollbar-hide">
+    <nav className="flex gap-3 overflow-x-auto pb-3 pt-4 px-4 scrollbar-hide">
       {categories.map((category) => (
         <Button
           key={category}
           onClick={() => onCategoryChange(category)}
           variant={activeCategory === category ? "default" : "ghost"}
           className={`
-            px-6 py-2.5 rounded-full whitespace-nowrap font-medium transition-all
+            px-5 py-2 rounded-full whitespace-nowrap font-semibold text-sm transition-all
             ${activeCategory === category 
-              ? 'bg-primary text-primary-foreground' 
+              ? 'bg-primary text-primary-foreground shadow-md' 
               : 'text-foreground hover:bg-muted'
             }
           `}

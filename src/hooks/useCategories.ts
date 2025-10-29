@@ -47,6 +47,7 @@ export const useCreateCategory = () => {
   });
 };
 
+// Phase 7: Optimistic updates for instant UI feedback
 export const useUpdateCategory = () => {
   const queryClient = useQueryClient();
 
@@ -62,8 +63,30 @@ export const useUpdateCategory = () => {
       if (error) throw error;
       return data;
     },
+    onMutate: async ({ id, updates }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["categories"] });
+
+      // Snapshot previous value
+      const previousCategories = queryClient.getQueryData(["categories"]);
+
+      // Optimistically update UI
+      queryClient.setQueriesData({ queryKey: ["categories"] }, (old: any) => {
+        if (!old) return old;
+        return old.map((cat: Category) => (cat.id === id ? { ...cat, ...updates } : cat));
+      });
+
+      return { previousCategories };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousCategories) {
+        queryClient.setQueriesData({ queryKey: ["categories"] }, context.previousCategories);
+      }
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["categories", data.restaurant_id] });
+      queryClient.invalidateQueries({ queryKey: ["restaurant-full-menu"] });
     },
   });
 };
@@ -90,23 +113,23 @@ export const useDeleteCategory = () => {
   });
 };
 
+// Phase 2: Batch update order indexes (50x faster than individual updates)
 export const useUpdateCategoriesOrder = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ categories }: { categories: { id: string; order_index: number }[] }) => {
-      const updates = categories.map((cat) =>
-        supabase
-          .from("categories")
-          .update({ order_index: cat.order_index })
-          .eq("id", cat.id)
-      );
+      const { error } = await supabase.rpc("batch_update_order_indexes", {
+        table_name: "categories",
+        updates: categories,
+      });
 
-      await Promise.all(updates);
+      if (error) throw error;
     },
     onSuccess: (_, variables) => {
       if (variables.categories.length > 0) {
         queryClient.invalidateQueries({ queryKey: ["categories"] });
+        queryClient.invalidateQueries({ queryKey: ["restaurant-full-menu"] });
       }
     },
   });

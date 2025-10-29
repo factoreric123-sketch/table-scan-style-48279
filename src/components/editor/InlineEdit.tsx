@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 
 interface InlineEditProps {
   value: string;
@@ -23,6 +24,13 @@ export const InlineEdit = ({ value, onSave, className, multiline = false }: Inli
       inputRef.current.select();
     }
   }, [isEditing]);
+
+  // Phase 3: Debounced save to prevent excessive API calls during typing
+  const debouncedSave = useDebouncedCallback((newValue: string) => {
+    if (newValue.trim() !== value) {
+      onSave(newValue.trim());
+    }
+  }, 500);
 
   const handleSave = () => {
     setIsEditing(false);

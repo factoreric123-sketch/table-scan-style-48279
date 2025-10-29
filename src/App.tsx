@@ -12,7 +12,17 @@ import Editor from "./pages/Editor";
 import PublicMenu from "./pages/PublicMenu";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Phase 8: Configure global React Query defaults for better caching and performance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh, reduces refetches
+      gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer (formerly cacheTime)
+      refetchOnWindowFocus: false, // Don't refetch when user returns to tab
+      retry: 1, // Only retry failed queries once
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

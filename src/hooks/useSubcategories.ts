@@ -70,6 +70,7 @@ export const useCreateSubcategory = () => {
   });
 };
 
+// Phase 7: Optimistic updates
 export const useUpdateSubcategory = () => {
   const queryClient = useQueryClient();
 
@@ -85,9 +86,26 @@ export const useUpdateSubcategory = () => {
       if (error) throw error;
       return data;
     },
+    onMutate: async ({ id, updates }) => {
+      await queryClient.cancelQueries({ queryKey: ["subcategories"] });
+      const previousSubcategories = queryClient.getQueryData(["subcategories"]);
+
+      queryClient.setQueriesData({ queryKey: ["subcategories"] }, (old: any) => {
+        if (!old) return old;
+        return old.map((sub: Subcategory) => (sub.id === id ? { ...sub, ...updates } : sub));
+      });
+
+      return { previousSubcategories };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousSubcategories) {
+        queryClient.setQueriesData({ queryKey: ["subcategories"] }, context.previousSubcategories);
+      }
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["subcategories", data.category_id] });
       queryClient.invalidateQueries({ queryKey: ["subcategories", "restaurant"] });
+      queryClient.invalidateQueries({ queryKey: ["restaurant-full-menu"] });
     },
   });
 };
@@ -114,22 +132,22 @@ export const useDeleteSubcategory = () => {
   });
 };
 
+// Phase 2: Batch update order indexes
 export const useUpdateSubcategoriesOrder = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ subcategories }: { subcategories: { id: string; order_index: number }[] }) => {
-      const updates = subcategories.map((sub) =>
-        supabase
-          .from("subcategories")
-          .update({ order_index: sub.order_index })
-          .eq("id", sub.id)
-      );
+      const { error } = await supabase.rpc("batch_update_order_indexes", {
+        table_name: "subcategories",
+        updates: subcategories,
+      });
 
-      await Promise.all(updates);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subcategories"] });
+      queryClient.invalidateQueries({ queryKey: ["restaurant-full-menu"] });
     },
   });
 };

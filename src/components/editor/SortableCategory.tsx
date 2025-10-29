@@ -63,10 +63,11 @@ export const SortableCategory = ({
         style={style}
         className="group relative shrink-0"
       >
-        <div
+        <Button
           onClick={() => onCategoryChange(category.id)}
+          variant={isActive ? "default" : "ghost"}
           className={`
-            px-5 py-2 rounded-full whitespace-nowrap font-semibold text-sm transition-all cursor-pointer
+            px-5 py-2 rounded-full whitespace-nowrap font-semibold text-sm transition-all
             ${isActive 
               ? 'bg-primary text-primary-foreground shadow-md' 
               : 'text-foreground hover:bg-muted'
@@ -74,30 +75,30 @@ export const SortableCategory = ({
           `}
         >
           <div className="flex items-center gap-2">
-            <div
+            <button
               {...attributes}
               {...listeners}
               className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={(e) => e.stopPropagation()}
             >
               <GripVertical className="h-4 w-4" />
-            </div>
+            </button>
             <InlineEdit
               value={category.name}
               onSave={handleNameUpdate}
               className="bg-transparent border-none focus:outline-none focus:ring-0"
             />
-            <div
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 setShowDeleteDialog(true);
               }}
-              className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive cursor-pointer"
+              className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
             >
               <Trash2 className="h-4 w-4" />
-            </div>
+            </button>
           </div>
-        </div>
+        </Button>
       </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

@@ -50,7 +50,6 @@ function createImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-// Phase 5: Synchronous compression (fallback)
 export async function compressImage(file: File | Blob): Promise<File> {
   const options = {
     maxSizeMB: 1,
@@ -65,35 +64,4 @@ export async function compressImage(file: File | Blob): Promise<File> {
     console.error('Error compressing image:', error);
     throw error;
   }
-}
-
-// Phase 5: Async compression using Web Worker (prevents UI freezing)
-let workerInstance: Worker | null = null;
-
-function getWorker(): Worker {
-  if (!workerInstance) {
-    workerInstance = new Worker(
-      new URL('../workers/imageCompressor.worker.ts', import.meta.url),
-      { type: 'module' }
-    );
-  }
-  return workerInstance;
-}
-
-export async function compressImageAsync(file: File | Blob): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const worker = getWorker();
-    
-    const handleMessage = (e: MessageEvent) => {
-      if (e.data.success) {
-        resolve(e.data.file);
-      } else {
-        reject(new Error(e.data.error || 'Compression failed'));
-      }
-      worker.removeEventListener('message', handleMessage);
-    };
-
-    worker.addEventListener('message', handleMessage);
-    worker.postMessage({ file });
-  });
 }

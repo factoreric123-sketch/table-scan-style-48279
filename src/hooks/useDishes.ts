@@ -77,7 +77,6 @@ export const useCreateDish = () => {
   });
 };
 
-// Phase 7: Optimistic updates
 export const useUpdateDish = () => {
   const queryClient = useQueryClient();
 
@@ -93,26 +92,9 @@ export const useUpdateDish = () => {
       if (error) throw error;
       return data;
     },
-    onMutate: async ({ id, updates }) => {
-      await queryClient.cancelQueries({ queryKey: ["dishes"] });
-      const previousDishes = queryClient.getQueryData(["dishes"]);
-
-      queryClient.setQueriesData({ queryKey: ["dishes"] }, (old: any) => {
-        if (!old) return old;
-        return old.map((dish: Dish) => (dish.id === id ? { ...dish, ...updates } : dish));
-      });
-
-      return { previousDishes };
-    },
-    onError: (err, variables, context) => {
-      if (context?.previousDishes) {
-        queryClient.setQueriesData({ queryKey: ["dishes"] }, context.previousDishes);
-      }
-    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["dishes", data.subcategory_id] });
       queryClient.invalidateQueries({ queryKey: ["dishes", "restaurant"] });
-      queryClient.invalidateQueries({ queryKey: ["restaurant-full-menu"] });
     },
   });
 };
@@ -138,22 +120,22 @@ export const useDeleteDish = () => {
   });
 };
 
-// Phase 2: Batch update order indexes
 export const useUpdateDishesOrder = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ dishes }: { dishes: { id: string; order_index: number }[] }) => {
-      const { error } = await supabase.rpc("batch_update_order_indexes", {
-        table_name: "dishes",
-        updates: dishes,
-      });
+      const updates = dishes.map((dish) =>
+        supabase
+          .from("dishes")
+          .update({ order_index: dish.order_index })
+          .eq("id", dish.id)
+      );
 
-      if (error) throw error;
+      await Promise.all(updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dishes"] });
-      queryClient.invalidateQueries({ queryKey: ["restaurant-full-menu"] });
     },
   });
 };

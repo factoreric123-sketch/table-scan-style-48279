@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 
 interface InlineEditProps {
   value: string;

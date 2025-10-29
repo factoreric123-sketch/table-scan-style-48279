@@ -12,6 +12,16 @@ import Dashboard from "./pages/Dashboard";
 import Editor from "./pages/Editor";
 import PublicMenu from "./pages/PublicMenu";
 import NotFound from "./pages/NotFound";
+import AboutUs from "./pages/AboutUs";
+import Pricing from "./pages/Pricing";
+import Contact from "./pages/Contact";
+import Careers from "./pages/Careers";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
+import TermsOfService from "./pages/legal/TermsOfService";
+import CookiePolicy from "./pages/legal/CookiePolicy";
+import GDPR from "./pages/legal/GDPR";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +36,16 @@ const App = () => (
             <Route path="/" element={<Home />} />
             <Route path="/demo" element={<Demo />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/careers" element={<Careers />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/cookies" element={<CookiePolicy />} />
+            <Route path="/gdpr" element={<GDPR />} />
             <Route
               path="/dashboard"
               element={

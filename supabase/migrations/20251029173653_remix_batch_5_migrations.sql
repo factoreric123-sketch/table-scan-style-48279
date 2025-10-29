@@ -1,3 +1,5 @@
+
+-- Migration: 20251028230254
 -- Create app_role enum
 CREATE TYPE public.app_role AS ENUM ('owner', 'admin');
 
@@ -262,3 +264,162 @@ CREATE TRIGGER update_restaurants_updated_at
   BEFORE UPDATE ON public.restaurants
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Migration: 20251029155914
+-- Phase 1: Add Performance Indexes
+-- Composite indexes for foreign key + order_index queries
+
+-- Categories: Fast lookup by restaurant + ordering
+CREATE INDEX IF NOT EXISTS idx_categories_restaurant_order 
+ON categories(restaurant_id, order_index);
+
+-- Subcategories: Fast lookup by category + ordering
+CREATE INDEX IF NOT EXISTS idx_subcategories_category_order 
+ON subcategories(category_id, order_index);
+
+-- Dishes: Fast lookup by subcategory + ordering
+CREATE INDEX IF NOT EXISTS idx_dishes_subcategory_order 
+ON dishes(subcategory_id, order_index);
+
+-- Restaurants: Fast lookup by owner
+CREATE INDEX IF NOT EXISTS idx_restaurants_owner 
+ON restaurants(owner_id);
+
+-- Restaurants: Fast public menu lookup by slug
+CREATE INDEX IF NOT EXISTS idx_restaurants_slug 
+ON restaurants(slug);
+
+-- Migration: 20251029155934
+-- Phase 2: Batch Update Order Indexes Function
+-- Allows updating multiple order_index values in a single database call
+
+CREATE OR REPLACE FUNCTION batch_update_order_indexes(
+  table_name TEXT,
+  updates JSONB
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  item JSONB;
+BEGIN
+  -- Validate table name to prevent SQL injection
+  IF table_name NOT IN ('categories', 'subcategories', 'dishes') THEN
+    RAISE EXCEPTION 'Invalid table name: %', table_name;
+  END IF;
+
+  -- Update each item's order_index
+  FOR item IN SELECT * FROM jsonb_array_elements(updates)
+  LOOP
+    EXECUTE format(
+      'UPDATE %I SET order_index = $1 WHERE id = $2',
+      table_name
+    ) USING (item->>'order_index')::INTEGER, (item->>'id')::UUID;
+  END LOOP;
+END;
+$$;
+
+-- Migration: 20251029155958
+-- Phase 4: Optimized Full Menu Fetching
+-- Returns restaurant + categories + subcategories + dishes in a single nested query
+
+CREATE OR REPLACE FUNCTION get_restaurant_full_menu(p_restaurant_id UUID)
+RETURNS JSON
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  result JSON;
+BEGIN
+  SELECT json_build_object(
+    'restaurant', (
+      SELECT row_to_json(r) 
+      FROM restaurants r 
+      WHERE r.id = p_restaurant_id
+    ),
+    'categories', (
+      SELECT COALESCE(json_agg(
+        json_build_object(
+          'id', c.id,
+          'name', c.name,
+          'restaurant_id', c.restaurant_id,
+          'order_index', c.order_index,
+          'created_at', c.created_at,
+          'subcategories', (
+            SELECT COALESCE(json_agg(
+              json_build_object(
+                'id', s.id,
+                'name', s.name,
+                'category_id', s.category_id,
+                'order_index', s.order_index,
+                'created_at', s.created_at,
+                'dishes', (
+                  SELECT COALESCE(json_agg(
+                    json_build_object(
+                      'id', d.id,
+                      'name', d.name,
+                      'description', d.description,
+                      'price', d.price,
+                      'image_url', d.image_url,
+                      'is_new', d.is_new,
+                      'order_index', d.order_index,
+                      'subcategory_id', d.subcategory_id,
+                      'created_at', d.created_at
+                    ) ORDER BY d.order_index
+                  ), '[]'::json)
+                  FROM dishes d
+                  WHERE d.subcategory_id = s.id
+                )
+              ) ORDER BY s.order_index
+            ), '[]'::json)
+            FROM subcategories s
+            WHERE s.category_id = c.id
+          )
+        ) ORDER BY c.order_index
+      ), '[]'::json)
+      FROM categories c
+      WHERE c.restaurant_id = p_restaurant_id
+    )
+  ) INTO result;
+  
+  RETURN result;
+END;
+$$;
+
+-- Migration: 20251029170958
+-- Create optimized batch update function for order indexes
+-- This replaces N individual UPDATE queries with a single bulk operation
+
+CREATE OR REPLACE FUNCTION public.batch_update_order_indexes_optimized(
+  table_name text,
+  updates jsonb
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE
+  query text;
+BEGIN
+  -- Validate table name to prevent SQL injection
+  IF table_name NOT IN ('categories', 'subcategories', 'dishes') THEN
+    RAISE EXCEPTION 'Invalid table name: %', table_name;
+  END IF;
+
+  -- Build and execute single UPDATE FROM query
+  query := format(
+    'UPDATE %I SET order_index = updates.new_order
+     FROM (SELECT (value->>''id'')::uuid as id, (value->>''order_index'')::integer as new_order 
+           FROM jsonb_array_elements($1)) as updates
+     WHERE %I.id = updates.id',
+    table_name, table_name
+  );
+
+  EXECUTE query USING updates;
+END;
+$$;

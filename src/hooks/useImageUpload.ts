@@ -1,16 +1,23 @@
+import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface UploadImageParams {
+  file: File;
+  bucket: "dish-images" | "hero-images";
+  path: string;
+}
+
 export const useImageUpload = () => {
-  const uploadImage = async (file: File, bucket: "dish-images" | "hero-images"): Promise<string | null> => {
-    try {
+  return useMutation({
+    mutationFn: async ({ file, bucket, path }: UploadImageParams): Promise<string> => {
       const fileExt = file.name.split(".").pop();
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const filePath = path || fileName;
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file);
+        .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
         throw uploadError;
@@ -21,12 +28,10 @@ export const useImageUpload = () => {
         .getPublicUrl(filePath);
 
       return data.publicUrl;
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       console.error("Error uploading image:", error);
       toast.error(error.message || "Failed to upload image");
-      return null;
-    }
-  };
-
-  return { uploadImage };
+    },
+  });
 };

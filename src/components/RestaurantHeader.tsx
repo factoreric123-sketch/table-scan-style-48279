@@ -1,25 +1,152 @@
+import { useState } from "react";
+import { ImageCropModal } from "./ImageCropModal";
+import { useImageUpload } from "@/hooks/useImageUpload";
+import { useUpdateRestaurant } from "@/hooks/useRestaurants";
+import { InlineEdit } from "./editor/InlineEdit";
+import { Camera } from "lucide-react";
+import { toast } from "sonner";
 import heroImage from "@/assets/restaurant-hero.jpg";
 
 interface RestaurantHeaderProps {
   name: string;
   tagline?: string;
   heroImageUrl?: string | null;
+  editable?: boolean;
+  restaurantId?: string;
 }
 
-const RestaurantHeader = ({ name, tagline, heroImageUrl }: RestaurantHeaderProps) => {
+const RestaurantHeader = ({ 
+  name, 
+  tagline = "", 
+  heroImageUrl, 
+  editable = false, 
+  restaurantId 
+}: RestaurantHeaderProps) => {
+  const uploadImage = useImageUpload();
+  const updateRestaurant = useUpdateRestaurant();
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      setShowCropModal(true);
+    }
+  };
+
+  const handleImageCrop = async (croppedFile: File) => {
+    if (!restaurantId) return;
+    
+    try {
+      const imageUrl = await uploadImage.mutateAsync({
+        file: croppedFile,
+        bucket: "hero-images",
+        path: `${restaurantId}/${croppedFile.name}`,
+      });
+      
+      await updateRestaurant.mutateAsync({
+        id: restaurantId,
+        updates: { hero_image_url: imageUrl },
+      });
+      
+      setShowCropModal(false);
+      setSelectedImage(null);
+      toast.success("Hero image updated");
+    } catch (error) {
+      toast.error("Failed to upload image");
+    }
+  };
+
+  const handleNameUpdate = async (newName: string) => {
+    if (!restaurantId || !newName.trim()) return;
+    try {
+      await updateRestaurant.mutateAsync({
+        id: restaurantId,
+        updates: { name: newName.trim() },
+      });
+    } catch (error) {
+      toast.error("Failed to update name");
+    }
+  };
+
+  const handleTaglineUpdate = async (newTagline: string) => {
+    if (!restaurantId) return;
+    try {
+      await updateRestaurant.mutateAsync({
+        id: restaurantId,
+        updates: { tagline: newTagline.trim() },
+      });
+    } catch (error) {
+      toast.error("Failed to update tagline");
+    }
+  };
+
+  const displayImage = heroImageUrl || heroImage;
+
   return (
-    <div className="relative h-64 overflow-hidden">
-      <img 
-        src={heroImageUrl || heroImage} 
-        alt="Restaurant interior" 
-        className="w-full h-full object-cover"
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-background" />
-      <div className="absolute bottom-0 left-0 right-0 px-6 py-6">
-        <h1 className="text-4xl font-bold text-white mb-1 drop-shadow-lg">{name}</h1>
-        {tagline && <p className="text-sm text-white/90 drop-shadow-md">{tagline}</p>}
-      </div>
-    </div>
+    <>
+      <header className="relative w-full h-64 md:h-80 overflow-hidden group">
+        <img 
+          src={displayImage} 
+          alt="Restaurant ambiance" 
+          className="w-full h-full object-cover"
+        />
+        
+        {editable && (
+          <label className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10">
+            <div className="text-center">
+              <Camera className="h-12 w-12 mx-auto mb-2 text-foreground" />
+              <span className="text-sm font-medium text-foreground">Change Hero Image</span>
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+          </label>
+        )}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
+          {editable ? (
+            <>
+              <InlineEdit
+                value={name}
+                onSave={handleNameUpdate}
+                className="text-4xl md:text-5xl font-bold mb-2 text-foreground drop-shadow-lg"
+              />
+              <InlineEdit
+                value={tagline}
+                onSave={handleTaglineUpdate}
+                className="text-base md:text-lg text-muted-foreground drop-shadow"
+              />
+            </>
+          ) : (
+            <>
+              <h1 className="text-4xl md:text-5xl font-bold mb-2 text-foreground drop-shadow-lg">
+                {name}
+              </h1>
+              {tagline && (
+                <p className="text-base md:text-lg text-muted-foreground drop-shadow">
+                  {tagline}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </header>
+
+      {selectedImage && (
+        <ImageCropModal
+          open={showCropModal}
+          onOpenChange={setShowCropModal}
+          imageFile={selectedImage}
+          onCropComplete={handleImageCrop}
+        />
+      )}
+    </>
   );
 };
 

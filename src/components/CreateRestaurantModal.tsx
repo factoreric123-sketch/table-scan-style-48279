@@ -20,7 +20,7 @@ export const CreateRestaurantModal = ({ open, onOpenChange }: CreateRestaurantMo
   const { user } = useAuth();
   const navigate = useNavigate();
   const createRestaurant = useCreateRestaurant();
-  const { uploadImage } = useImageUpload();
+  const uploadImage = useImageUpload();
 
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
@@ -45,10 +45,16 @@ export const CreateRestaurantModal = ({ open, onOpenChange }: CreateRestaurantMo
   };
 
   const handleImageCropped = async (croppedFile: File) => {
-    const url = await uploadImage(croppedFile, "hero-images");
-    if (url) {
+    try {
+      const url = await uploadImage.mutateAsync({
+        file: croppedFile,
+        bucket: "hero-images",
+        path: `temp/${croppedFile.name}`,
+      });
       setHeroImageUrl(url);
       toast.success("Image uploaded!");
+    } catch (error) {
+      toast.error("Failed to upload image");
     }
     setShowCropModal(false);
   };

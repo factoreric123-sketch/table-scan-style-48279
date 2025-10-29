@@ -1,5 +1,6 @@
 import { DndContext, closestCorners, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { SortableSubcategory } from "./SortableSubcategory";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -92,7 +93,7 @@ export const EditableSubcategories = ({
 
   return (
     <div className="px-4 pb-3">
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd} modifiers={[restrictToHorizontalAxis]}>
         <SortableContext items={subcategories.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
           <div className="flex gap-12 overflow-x-auto scrollbar-hide">
             {subcategories.map((subcategory) => (

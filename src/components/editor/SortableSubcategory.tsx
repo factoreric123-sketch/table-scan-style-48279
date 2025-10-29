@@ -60,12 +60,17 @@ export const SortableSubcategory = ({
       <div
         ref={setNodeRef}
         style={style}
-        className="group relative shrink-0"
+        className="group relative shrink-0 mx-1"
       >
-        <button
+        <div
+          {...attributes}
+          {...listeners}
           onClick={() => onSubcategoryChange(subcategory.id)}
+          role="button"
+          aria-pressed={isActive}
           className={`
-            text-xs font-bold uppercase tracking-wider whitespace-nowrap pb-3 transition-all relative flex items-center gap-2
+            text-xs font-bold uppercase tracking-wider whitespace-nowrap pb-3 transition-all relative flex items-center gap-2 select-none
+            min-w-[100px] cursor-grab active:cursor-grabbing
             ${isActive 
               ? 'text-foreground' 
               : 'text-muted-foreground hover:text-foreground'
@@ -73,14 +78,12 @@ export const SortableSubcategory = ({
             ${isActive ? 'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-foreground' : ''}
           `}
         >
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+          <span
+            className="opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => e.stopPropagation()}
           >
             <GripVertical className="h-3 w-3" />
-          </button>
+          </span>
           <InlineEdit
             value={subcategory.name}
             onSave={handleNameUpdate}
@@ -92,10 +95,11 @@ export const SortableSubcategory = ({
               setShowDeleteDialog(true);
             }}
             className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+            type="button"
           >
             <Trash2 className="h-3 w-3" />
           </button>
-        </button>
+        </div>
       </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

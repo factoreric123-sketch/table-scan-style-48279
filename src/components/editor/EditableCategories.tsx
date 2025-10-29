@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DndContext, closestCorners, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { SortableCategory } from "./SortableCategory";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -93,7 +94,7 @@ export const EditableCategories = ({
 
   return (
     <div className="pt-4 px-4">
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd} modifiers={[restrictToHorizontalAxis]}>
         <SortableContext items={categories.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
           <div className="flex gap-6 overflow-x-auto pb-3 scrollbar-hide">
             {categories.map((category) => (

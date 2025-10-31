@@ -120,6 +120,7 @@ export type Database = {
           badge_display_order: Json | null
           created_at: string | null
           dietary_filter_order: Json | null
+          editor_view_mode: string | null
           hero_image_url: string | null
           id: string
           name: string
@@ -135,6 +136,7 @@ export type Database = {
           badge_display_order?: Json | null
           created_at?: string | null
           dietary_filter_order?: Json | null
+          editor_view_mode?: string | null
           hero_image_url?: string | null
           id?: string
           name: string
@@ -150,6 +152,7 @@ export type Database = {
           badge_display_order?: Json | null
           created_at?: string | null
           dietary_filter_order?: Json | null
+          editor_view_mode?: string | null
           hero_image_url?: string | null
           id?: string
           name?: string

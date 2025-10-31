@@ -8,6 +8,7 @@ import { EditorTopBar } from "@/components/editor/EditorTopBar";
 import { EditableCategories } from "@/components/editor/EditableCategories";
 import { EditableSubcategories } from "@/components/editor/EditableSubcategories";
 import { EditableDishes } from "@/components/editor/EditableDishes";
+import { SpreadsheetView } from "@/components/editor/SpreadsheetView";
 import RestaurantHeader from "@/components/RestaurantHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ const Editor = () => {
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [activeSubcategory, setActiveSubcategory] = useState<string>("");
   const [previewMode, setPreviewMode] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>(restaurant?.editor_view_mode || 'grid');
 
   // Theme history for undo/redo
   const { canUndo, canRedo, undo, redo, push, reset } = useThemeHistory(
@@ -104,6 +106,23 @@ const Editor = () => {
     }
   };
 
+  const handleViewModeChange = async (mode: 'grid' | 'table') => {
+    setViewMode(mode);
+    if (restaurant) {
+      await updateRestaurant.mutateAsync({
+        id: restaurant.id,
+        updates: { editor_view_mode: mode }
+      });
+    }
+  };
+
+  // Sync view mode with restaurant preference
+  useEffect(() => {
+    if (restaurant?.editor_view_mode) {
+      setViewMode(restaurant.editor_view_mode);
+    }
+  }, [restaurant?.editor_view_mode]);
+
   if (restaurantLoading || categoriesLoading || subcategoriesLoading || dishesLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -143,6 +162,8 @@ const Editor = () => {
       <EditorTopBar
         restaurant={restaurant}
         previewMode={previewMode}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
         onPreviewToggle={() => setPreviewMode(!previewMode)}
         onPublishToggle={handlePublishToggle}
         onUndo={handleUndo}
@@ -179,11 +200,21 @@ const Editor = () => {
           />
         )}
 
-        {activeSubcategory && (
+        {activeSubcategory && viewMode === 'grid' && (
           <EditableDishes
             dishes={dishesForActiveSubcategory}
             subcategoryId={activeSubcategory}
             previewMode={previewMode}
+          />
+        )}
+
+        {activeSubcategory && viewMode === 'table' && (
+          <SpreadsheetView
+            dishes={dishesForActiveSubcategory}
+            categories={categories}
+            subcategories={subcategories}
+            restaurantId={restaurant.id}
+            activeSubcategoryId={activeSubcategory}
           />
         )}
       </div>

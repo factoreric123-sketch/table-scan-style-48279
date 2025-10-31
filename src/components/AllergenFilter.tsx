@@ -20,6 +20,9 @@ export const DIETARY_OPTIONS = [
   { value: "vegan", label: "Vegan", Icon: Sprout },
 ] as const;
 
+// Capitalize helper
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
 interface AllergenFilterProps {
   selectedAllergens: string[];
   selectedDietary: string[];
@@ -81,12 +84,12 @@ export const AllergenFilter = ({
               key={option.value}
               variant={isSelected ? "default" : "outline"}
               className={cn(
-                "cursor-pointer active:scale-95 hover:shadow-md px-3 py-1.5",
+                "cursor-pointer ease-out active:scale-95 hover:shadow-md px-3 py-1.5 gap-1.5",
                 isSelected && "bg-ios-green hover:bg-ios-green/90"
               )}
               onClick={() => onDietaryToggle(option.value)}
             >
-              <Icon className="h-3.5 w-3.5 mr-1.5" />
+              {isSelected && <Icon className="h-3.5 w-3.5" />}
               {option.label}
             </Badge>
           );
@@ -102,11 +105,11 @@ export const AllergenFilter = ({
             <Badge
               key={option.value}
               variant={isSelected ? "destructive" : "outline"}
-              className="cursor-pointer active:scale-95 hover:shadow-md px-3 py-1.5"
+              className="cursor-pointer ease-out active:scale-95 hover:shadow-md px-3 py-1.5 gap-1.5"
               onClick={() => onAllergenToggle(option.value)}
             >
-              <Icon className="h-3.5 w-3.5 mr-1.5" />
-              {option.label}
+              {isSelected && <Icon className="h-3.5 w-3.5" />}
+              {capitalize(option.label)}
             </Badge>
           );
         })}

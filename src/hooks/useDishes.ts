@@ -10,6 +10,9 @@ export interface Dish {
   price: string;
   image_url: string | null;
   is_new: boolean;
+  is_special: boolean;
+  is_popular: boolean;
+  is_chef_recommendation: boolean;
   order_index: number;
   created_at: string;
   allergens: string[] | null;

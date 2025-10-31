@@ -8,6 +8,9 @@ export interface Dish {
   price: string;
   image: string;
   isNew?: boolean;
+  isSpecial?: boolean;
+  isPopular?: boolean;
+  isChefRecommendation?: boolean;
   category: string;
   subcategory: string;
   allergens?: string[];
@@ -28,11 +31,28 @@ const DishCard = ({ dish, onClick }: DishCardProps) => {
       className="group relative cursor-pointer" 
       onClick={onClick}
     >
-      {dish.isNew && (
-        <Badge className="absolute top-2 right-2 z-10 bg-new-badge text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-          New Addition
-        </Badge>
-      )}
+      <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 items-end">
+        {dish.isNew && (
+          <Badge className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+            New Addition
+          </Badge>
+        )}
+        {dish.isSpecial && (
+          <Badge className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+            Special
+          </Badge>
+        )}
+        {dish.isPopular && (
+          <Badge className="bg-cyan-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+            Popular
+          </Badge>
+        )}
+        {dish.isChefRecommendation && (
+          <Badge className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+            Chef's Recommendation
+          </Badge>
+        )}
+      </div>
       
       <div className="bg-dish-card rounded-2xl overflow-hidden aspect-square mb-2.5 relative shadow-md">
         <img 

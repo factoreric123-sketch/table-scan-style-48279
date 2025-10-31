@@ -54,7 +54,10 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_chef_recommendation: boolean | null
           is_new: boolean | null
+          is_popular: boolean | null
+          is_special: boolean | null
           is_spicy: boolean | null
           is_vegan: boolean | null
           is_vegetarian: boolean | null
@@ -70,7 +73,10 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_chef_recommendation?: boolean | null
           is_new?: boolean | null
+          is_popular?: boolean | null
+          is_special?: boolean | null
           is_spicy?: boolean | null
           is_vegan?: boolean | null
           is_vegetarian?: boolean | null
@@ -86,7 +92,10 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_chef_recommendation?: boolean | null
           is_new?: boolean | null
+          is_popular?: boolean | null
+          is_special?: boolean | null
           is_spicy?: boolean | null
           is_vegan?: boolean | null
           is_vegetarian?: boolean | null

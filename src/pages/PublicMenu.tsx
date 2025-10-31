@@ -126,12 +126,14 @@ const PublicMenu = () => {
       });
     }
 
-    // Filter by dietary preferences
+    // Filter by dietary preferences - show dishes matching ANY selected preference
     if (selectedDietary.length > 0) {
       filtered = filtered.filter((dish) => {
-        if (selectedDietary.includes("vegan")) return dish.is_vegan;
-        if (selectedDietary.includes("vegetarian")) return dish.is_vegetarian || dish.is_vegan;
-        return true;
+        return selectedDietary.some((pref) => {
+          if (pref === "vegan") return dish.is_vegan;
+          if (pref === "vegetarian") return dish.is_vegetarian || dish.is_vegan;
+          return false;
+        });
       });
     }
 
@@ -142,6 +144,9 @@ const PublicMenu = () => {
       price: d.price,
       image: d.image_url || "",
       isNew: d.is_new,
+      isSpecial: d.is_special,
+      isPopular: d.is_popular,
+      isChefRecommendation: d.is_chef_recommendation,
       category: activeCategoryName,
       subcategory: activeSubcategoryObj?.name || "",
       allergens: d.allergens,

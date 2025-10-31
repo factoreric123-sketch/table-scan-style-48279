@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
+import { useDebounce } from "use-debounce";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2, Image as ImageIcon, ChevronDown, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +42,16 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
   const [showCropModal, setShowCropModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [localCalories, setLocalCalories] = useState(dish.calories?.toString() || "");
+  const [debouncedCalories] = useDebounce(localCalories, 500);
+
+  // Update database only when debounced value changes
+  useEffect(() => {
+    const caloriesNum = debouncedCalories ? parseInt(debouncedCalories) : null;
+    if (caloriesNum !== dish.calories) {
+      handleUpdate("calories", caloriesNum);
+    }
+  }, [debouncedCalories]);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -100,11 +111,28 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
   return (
     <>
       <div ref={setNodeRef} style={style} className="group relative">
-        {dish.is_new && (
-          <Badge className="absolute top-2 right-2 z-10 bg-new-badge text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-            New Addition
-          </Badge>
-        )}
+        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 items-end">
+          {dish.is_new && (
+            <Badge className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+              New Addition
+            </Badge>
+          )}
+          {dish.is_special && (
+            <Badge className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+              Special
+            </Badge>
+          )}
+          {dish.is_popular && (
+            <Badge className="bg-cyan-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+              Popular
+            </Badge>
+          )}
+          {dish.is_chef_recommendation && (
+            <Badge className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+              Chef's Recommendation
+            </Badge>
+          )}
+        </div>
         
         <div className="absolute top-2 left-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
@@ -202,8 +230,8 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
                 <Input
                   id={`calories-${dish.id}`}
                   type="number"
-                  value={dish.calories || ""}
-                  onChange={(e) => handleUpdate("calories", e.target.value ? parseInt(e.target.value) : null)}
+                  value={localCalories}
+                  onChange={(e) => setLocalCalories(e.target.value)}
                   className="h-8 text-xs w-24"
                   placeholder="0"
                 />
@@ -240,6 +268,55 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
                     id={`spicy-${dish.id}`}
                     checked={dish.is_spicy}
                     onCheckedChange={(checked) => handleUpdate("is_spicy", checked)}
+                  />
+                </div>
+              </div>
+
+              {/* Badge Section */}
+              <div className="space-y-2 pt-2 border-t border-border">
+                <Label className="text-xs text-muted-foreground">Badges & Labels</Label>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={`new-${dish.id}`} className="text-xs">
+                    🟢 New Addition
+                  </Label>
+                  <Switch
+                    id={`new-${dish.id}`}
+                    checked={dish.is_new}
+                    onCheckedChange={(checked) => handleUpdate("is_new", checked)}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={`special-${dish.id}`} className="text-xs">
+                    🟠 Special
+                  </Label>
+                  <Switch
+                    id={`special-${dish.id}`}
+                    checked={dish.is_special}
+                    onCheckedChange={(checked) => handleUpdate("is_special", checked)}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={`popular-${dish.id}`} className="text-xs">
+                    🔵 Popular
+                  </Label>
+                  <Switch
+                    id={`popular-${dish.id}`}
+                    checked={dish.is_popular}
+                    onCheckedChange={(checked) => handleUpdate("is_popular", checked)}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={`chef-${dish.id}`} className="text-xs">
+                    🔷 Chef's Recommendation
+                  </Label>
+                  <Switch
+                    id={`chef-${dish.id}`}
+                    checked={dish.is_chef_recommendation}
+                    onCheckedChange={(checked) => handleUpdate("is_chef_recommendation", checked)}
                   />
                 </div>
               </div>

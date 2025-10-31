@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import { Flame } from "lucide-react";
+import { Flame, Sparkles, Star, TrendingUp, ChefHat } from "lucide-react";
+import React from "react";
 
 export interface Dish {
   id: string;
@@ -99,5 +100,7 @@ const DishCard = ({ dish, onClick }: DishCardProps) => {
     </div>
   );
 };
+
+DishCard.displayName = 'DishCard';
 
 export default DishCard;

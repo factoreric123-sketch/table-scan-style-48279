@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { useDebounce } from "use-debounce";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Trash2, Image as ImageIcon, ChevronDown, Flame } from "lucide-react";
+import { GripVertical, Trash2, Image as ImageIcon, ChevronDown, Flame, Sparkles, Star, TrendingUp, ChefHat, Wheat, Milk, Egg, Fish, Shell, Nut, Sprout, Beef, Bird, Leaf } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -111,28 +111,33 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
   return (
     <>
       <div ref={setNodeRef} style={style} className="group relative">
-        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 items-end">
-          {dish.is_new && (
-            <Badge className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-              New Addition
-            </Badge>
-          )}
-          {dish.is_special && (
-            <Badge className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-              Special
-            </Badge>
-          )}
-          {dish.is_popular && (
-            <Badge className="bg-cyan-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-              Popular
-            </Badge>
-          )}
-          {dish.is_chef_recommendation && (
-            <Badge className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-              Chef's Recommendation
-            </Badge>
-          )}
-        </div>
+      {/* Stacked badges */}
+      <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 items-end">
+        {dish.is_new && (
+          <Badge className="bg-ios-green text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
+            <Sparkles className="h-3 w-3" />
+            New
+          </Badge>
+        )}
+        {dish.is_special && (
+          <Badge className="bg-ios-orange text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
+            <Star className="h-3 w-3" />
+            Special
+          </Badge>
+        )}
+        {dish.is_popular && (
+          <Badge className="bg-ios-blue text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
+            <TrendingUp className="h-3 w-3" />
+            Popular
+          </Badge>
+        )}
+        {dish.is_chef_recommendation && (
+          <Badge className="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
+            <ChefHat className="h-3 w-3" />
+            Chef's Pick
+          </Badge>
+        )}
+      </div>
         
         <div className="absolute top-2 left-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
@@ -208,17 +213,21 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
               <div>
                 <Label className="text-xs text-muted-foreground mb-2 block">Allergens</Label>
                 <div className="flex flex-wrap gap-1.5">
-                  {ALLERGEN_OPTIONS.map((option) => (
-                    <Badge
-                      key={option.value}
-                      variant={(dish.allergens || []).includes(option.value) ? "default" : "outline"}
-                      className="cursor-pointer text-xs"
-                      onClick={() => handleAllergenToggle(option.value)}
-                    >
-                      <span className="mr-1">{option.icon}</span>
-                      {option.label}
-                    </Badge>
-                  ))}
+                  {ALLERGEN_OPTIONS.map((option) => {
+                    const Icon = option.Icon;
+                    const isSelected = (dish.allergens || []).includes(option.value);
+                    return (
+                      <Badge
+                        key={option.value}
+                        variant={isSelected ? "default" : "outline"}
+                        className="cursor-pointer text-xs flex items-center gap-1 transition-all duration-150 active:scale-95"
+                        onClick={() => handleAllergenToggle(option.value)}
+                      >
+                        <Icon className="h-3 w-3" />
+                        {option.label}
+                      </Badge>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -277,8 +286,9 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
                 <Label className="text-xs text-muted-foreground">Badges & Labels</Label>
                 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor={`new-${dish.id}`} className="text-xs">
-                    🟢 New Addition
+                  <Label htmlFor={`new-${dish.id}`} className="text-xs flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-ios-green" />
+                    New Addition
                   </Label>
                   <Switch
                     id={`new-${dish.id}`}
@@ -288,8 +298,9 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor={`special-${dish.id}`} className="text-xs">
-                    🟠 Special
+                  <Label htmlFor={`special-${dish.id}`} className="text-xs flex items-center gap-1.5">
+                    <Star className="h-3.5 w-3.5 text-ios-orange" />
+                    Special
                   </Label>
                   <Switch
                     id={`special-${dish.id}`}
@@ -299,8 +310,9 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor={`popular-${dish.id}`} className="text-xs">
-                    🔵 Popular
+                  <Label htmlFor={`popular-${dish.id}`} className="text-xs flex items-center gap-1.5">
+                    <TrendingUp className="h-3.5 w-3.5 text-ios-blue" />
+                    Popular
                   </Label>
                   <Switch
                     id={`popular-${dish.id}`}
@@ -310,8 +322,9 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor={`chef-${dish.id}`} className="text-xs">
-                    🔷 Chef's Recommendation
+                  <Label htmlFor={`chef-${dish.id}`} className="text-xs flex items-center gap-1.5">
+                    <ChefHat className="h-3.5 w-3.5 text-purple-500" />
+                    Chef's Recommendation
                   </Label>
                   <Switch
                     id={`chef-${dish.id}`}

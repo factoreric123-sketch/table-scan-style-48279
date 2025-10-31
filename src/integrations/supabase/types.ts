@@ -116,7 +116,10 @@ export type Database = {
       }
       restaurants: {
         Row: {
+          allergen_filter_order: Json | null
+          badge_display_order: Json | null
           created_at: string | null
+          dietary_filter_order: Json | null
           hero_image_url: string | null
           id: string
           name: string
@@ -128,7 +131,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          allergen_filter_order?: Json | null
+          badge_display_order?: Json | null
           created_at?: string | null
+          dietary_filter_order?: Json | null
           hero_image_url?: string | null
           id?: string
           name: string
@@ -140,7 +146,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          allergen_filter_order?: Json | null
+          badge_display_order?: Json | null
           created_at?: string | null
+          dietary_filter_order?: Json | null
           hero_image_url?: string | null
           id?: string
           name?: string

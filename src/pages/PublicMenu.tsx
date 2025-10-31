@@ -234,6 +234,8 @@ const PublicMenu = () => {
         onAllergenToggle={handleAllergenToggle}
         onDietaryToggle={handleDietaryToggle}
         onClear={handleClearFilters}
+        allergenOrder={restaurant.allergen_filter_order as string[] | undefined}
+        dietaryOrder={restaurant.dietary_filter_order as string[] | undefined}
       />
 
       {/* Main Content */}

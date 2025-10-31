@@ -72,6 +72,11 @@ export default {
         },
         "new-badge": "hsl(var(--new-badge))",
         "dish-card": "hsl(var(--dish-card))",
+        "ios-blue": "#007AFF",
+        "ios-green": "#34C759",
+        "ios-orange": "#FF9500",
+        "ios-red": "#FF3B30",
+        "ios-gray": "#8E8E93",
       },
       borderRadius: {
         lg: "var(--radius)",

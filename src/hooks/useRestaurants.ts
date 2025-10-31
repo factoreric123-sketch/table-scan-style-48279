@@ -13,6 +13,9 @@ export interface Restaurant {
   published: boolean;
   created_at: string;
   updated_at: string;
+  allergen_filter_order?: string[];
+  dietary_filter_order?: string[];
+  badge_display_order?: string[];
 }
 
 export const useRestaurants = () => {

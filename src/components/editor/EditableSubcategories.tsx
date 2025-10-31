@@ -127,9 +127,10 @@ export const EditableSubcategories = ({
               variant="ghost"
               size="sm"
               className="text-xs font-bold uppercase tracking-wider whitespace-nowrap gap-2 shrink-0"
+              disabled={createSubcategory.isPending}
             >
               <Plus className="h-3 w-3" />
-              Add Subcategory
+              {createSubcategory.isPending ? "Adding..." : "Add Subcategory"}
             </Button>
           </div>
         </SortableContext>

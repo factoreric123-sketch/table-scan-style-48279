@@ -26,7 +26,18 @@ export const useSubscription = () => {
         return null;
       }
 
-      return data?.[0] as SubscriptionStatus | null;
+      // Handle empty array or null - return default free tier
+      if (!data || data.length === 0) {
+        return {
+          has_premium: false,
+          status: 'active',
+          plan_type: 'free',
+          current_period_end: null,
+          cancel_at_period_end: false,
+        } as SubscriptionStatus;
+      }
+
+      return data[0] as SubscriptionStatus;
     },
     enabled: !!user,
   });

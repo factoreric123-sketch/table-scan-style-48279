@@ -127,9 +127,10 @@ export const EditableCategories = ({
               variant="outline"
               size="sm"
               className="rounded-full whitespace-nowrap gap-2 shrink-0"
+              disabled={createCategory.isPending}
             >
               <Plus className="h-4 w-4" />
-              Add Category
+              {createCategory.isPending ? "Adding..." : "Add Category"}
             </Button>
           </div>
         </SortableContext>

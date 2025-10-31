@@ -124,9 +124,10 @@ export const EditableDishes = ({
         onClick={handleAddDish}
         variant="outline"
         className="w-full gap-2"
+        disabled={createDish.isPending}
       >
         <Plus className="h-4 w-4" />
-        Add Dish
+        {createDish.isPending ? "Adding..." : "Add Dish"}
       </Button>
     </div>
   );

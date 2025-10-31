@@ -75,19 +75,20 @@ const Editor = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo, previewMode]);
 
-  // Set initial active category and subcategory
-  useState(() => {
+  // Set initial active category
+  useEffect(() => {
     if (categories.length > 0 && !activeCategory) {
       setActiveCategory(categories[0].id);
     }
-  });
+  }, [categories, activeCategory]);
 
-  useState(() => {
+  // Set initial active subcategory when category changes
+  useEffect(() => {
     const subsForActiveCategory = subcategories.filter(s => s.category_id === activeCategory);
     if (subsForActiveCategory.length > 0 && !activeSubcategory) {
       setActiveSubcategory(subsForActiveCategory[0].id);
     }
-  });
+  }, [subcategories, activeCategory, activeSubcategory]);
 
   const handlePublishToggle = async () => {
     if (!restaurant) return;

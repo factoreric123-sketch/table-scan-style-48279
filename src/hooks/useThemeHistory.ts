@@ -21,12 +21,16 @@ export const useThemeHistory = (initialTheme: Theme) => {
       // Limit to last 50 states
       if (newHistory.length > 50) {
         newHistory.shift();
-        setCurrentIndex((idx) => idx); // Don't increment if we removed first item
-      } else {
-        setCurrentIndex((idx) => idx + 1);
+        return newHistory;
       }
-
+      
       return newHistory;
+    });
+    
+    // Update index separately to avoid stale closure
+    setCurrentIndex((prev) => {
+      const newLength = Math.min(prev + 2, 50);
+      return newLength - 1;
     });
   }, [currentIndex]);
 

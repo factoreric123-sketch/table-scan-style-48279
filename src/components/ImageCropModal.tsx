@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Cropper from "react-easy-crop";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ export const ImageCropModal = ({
   const [loading, setLoading] = useState(false);
 
   // Load image when file changes
-  useState(() => {
+  useEffect(() => {
     if (imageFile) {
       const reader = new FileReader();
       reader.addEventListener("load", () => {
@@ -33,7 +33,7 @@ export const ImageCropModal = ({
       });
       reader.readAsDataURL(imageFile);
     }
-  });
+  }, [imageFile]);
 
   const onCropCompleteCallback = useCallback(
     (croppedArea: any, croppedAreaPixels: any) => {

@@ -67,7 +67,7 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <Link to="/auth" className="hover:text-accent transition-colors">
+                <Link to="/pricing" className="hover:text-accent transition-colors">
                   Pricing
                 </Link>
               </li>
@@ -84,24 +84,24 @@ const Footer = () => {
             <h3 className="font-semibold text-foreground">Company</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <Link to="/about" className="hover:text-accent transition-colors">
                   About Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <Link to="/blog" className="hover:text-accent transition-colors">
                   Blog
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <Link to="/careers" className="hover:text-accent transition-colors">
                   Careers
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <Link to="/contact" className="hover:text-accent transition-colors">
                   Contact
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -111,24 +111,24 @@ const Footer = () => {
             <h3 className="font-semibold text-foreground">Legal</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <Link to="/privacy" className="hover:text-accent transition-colors">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <Link to="/terms" className="hover:text-accent transition-colors">
                   Terms of Service
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <Link to="/cookies" className="hover:text-accent transition-colors">
                   Cookie Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <Link to="/gdpr" className="hover:text-accent transition-colors">
                   GDPR
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

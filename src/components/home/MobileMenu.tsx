@@ -1,6 +1,5 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -25,24 +24,41 @@ const MobileMenu = ({ isOpen, onClose, scrollToSection }: MobileMenuProps) => {
       <div className="relative h-full flex flex-col p-6 animate-fade-in">
         <div className="flex flex-col gap-6 mt-16">
           <button
-            onClick={() => scrollToSection("features")}
+            onClick={() => {
+              scrollToSection("features");
+              onClose();
+            }}
             className="text-2xl font-semibold text-foreground hover:text-accent transition-colors text-left"
           >
             Features
           </button>
           <button
-            onClick={() => scrollToSection("demo")}
+            onClick={() => {
+              scrollToSection("demo");
+              onClose();
+            }}
             className="text-2xl font-semibold text-foreground hover:text-accent transition-colors text-left"
           >
             Demo
           </button>
-          <Link
-            to="/auth"
-            className="text-2xl font-semibold text-foreground hover:text-accent transition-colors"
-            onClick={onClose}
+          <button
+            onClick={() => {
+              navigate("/pricing");
+              onClose();
+            }}
+            className="text-2xl font-semibold text-foreground hover:text-accent transition-colors text-left"
+          >
+            Pricing
+          </button>
+          <button
+            onClick={() => {
+              navigate("/auth");
+              onClose();
+            }}
+            className="text-2xl font-semibold text-foreground hover:text-accent transition-colors text-left"
           >
             Sign In
-          </Link>
+          </button>
 
           <div className="mt-8 flex flex-col gap-4">
             <Button

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MobileMenu from "./MobileMenu";
@@ -8,6 +8,7 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,9 +19,16 @@ const Navbar = () => {
   }, []);
 
   const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
+    // If we're on the homepage, scroll directly
+    if (location.pathname === "/") {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+        setIsMobileMenuOpen(false);
+      }
+    } else {
+      // Navigate to homepage with scroll parameter
+      navigate(`/?scrollTo=${id}`);
       setIsMobileMenuOpen(false);
     }
   };
@@ -57,6 +65,12 @@ const Navbar = () => {
               >
                 Demo
               </button>
+              <Link
+                to="/pricing"
+                className="text-foreground/80 hover:text-foreground transition-colors text-sm font-medium"
+              >
+                Pricing
+              </Link>
               <Link
                 to="/auth"
                 className="text-foreground/80 hover:text-foreground transition-colors text-sm font-medium"

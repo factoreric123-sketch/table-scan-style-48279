@@ -1,6 +1,6 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { X, Flame, Wheat, Milk, Egg, Fish, Shell, Nut, Sprout, Beef, Bird, Leaf } from "lucide-react";
+import { X, Flame, Wheat, Milk, Egg, Fish, Shell, Nut, Sprout, Beef, Bird, Salad } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export interface DishDetail {
@@ -88,7 +88,7 @@ export const DishDetailDialog = ({ dish, open, onOpenChange }: DishDetailDialogP
             )}
             {dish.isVegetarian && !dish.isVegan && (
               <Badge variant="outline" className="bg-ios-green/10 text-ios-green border-ios-green/20 flex items-center gap-1.5">
-                <Leaf className="h-3.5 w-3.5" />
+                <Salad className="h-3.5 w-3.5" />
                 Vegetarian
               </Badge>
             )}

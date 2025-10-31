@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { useDebounce } from "use-debounce";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Trash2, Image as ImageIcon, ChevronDown, Flame, Sparkles, Star, TrendingUp, ChefHat, Wheat, Milk, Egg, Fish, Shell, Nut, Sprout, Beef, Bird, Leaf } from "lucide-react";
+import { GripVertical, Trash2, Image as ImageIcon, ChevronDown, Flame, Sparkles, Star, TrendingUp, ChefHat, Wheat, Milk, Egg, Fish, Shell, Nut, Sprout, Beef, Bird, Leaf, Salad } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -44,6 +44,28 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [localCalories, setLocalCalories] = useState(dish.calories?.toString() || "");
   const [debouncedCalories] = useDebounce(localCalories, 500);
+  
+  // Optimistic local state for instant feedback
+  const [localAllergens, setLocalAllergens] = useState<string[]>(dish.allergens || []);
+  const [localVegetarian, setLocalVegetarian] = useState(dish.is_vegetarian);
+  const [localVegan, setLocalVegan] = useState(dish.is_vegan);
+  const [localSpicy, setLocalSpicy] = useState(dish.is_spicy);
+  const [localNew, setLocalNew] = useState(dish.is_new);
+  const [localSpecial, setLocalSpecial] = useState(dish.is_special);
+  const [localPopular, setLocalPopular] = useState(dish.is_popular);
+  const [localChefRec, setLocalChefRec] = useState(dish.is_chef_recommendation);
+
+  // Sync local state when dish prop changes
+  useEffect(() => {
+    setLocalAllergens(dish.allergens || []);
+    setLocalVegetarian(dish.is_vegetarian);
+    setLocalVegan(dish.is_vegan);
+    setLocalSpicy(dish.is_spicy);
+    setLocalNew(dish.is_new);
+    setLocalSpecial(dish.is_special);
+    setLocalPopular(dish.is_popular);
+    setLocalChefRec(dish.is_chef_recommendation);
+  }, [dish]);
 
   // Update database only when debounced value changes
   useEffect(() => {
@@ -67,11 +89,16 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
   };
 
   const handleAllergenToggle = (allergen: string) => {
-    const current = dish.allergens || [];
-    const updated = current.includes(allergen)
-      ? current.filter((a) => a !== allergen)
-      : [...current, allergen];
+    const updated = localAllergens.includes(allergen)
+      ? localAllergens.filter((a) => a !== allergen)
+      : [...localAllergens, allergen];
+    setLocalAllergens(updated);
     handleUpdate("allergens", updated);
+  };
+
+  const handleToggle = (field: keyof Dish, currentValue: boolean, setter: (v: boolean) => void) => {
+    setter(!currentValue);
+    handleUpdate(field, !currentValue);
   };
 
   const handleDelete = () => {
@@ -113,25 +140,25 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
       <div ref={setNodeRef} style={style} className="group relative">
       {/* Stacked badges */}
       <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 items-end">
-        {dish.is_new && (
+        {localNew && (
           <Badge className="bg-ios-green text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
             <Sparkles className="h-3 w-3" />
             New
           </Badge>
         )}
-        {dish.is_special && (
+        {localSpecial && (
           <Badge className="bg-ios-orange text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
             <Star className="h-3 w-3" />
             Special
           </Badge>
         )}
-        {dish.is_popular && (
+        {localPopular && (
           <Badge className="bg-ios-blue text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
             <TrendingUp className="h-3 w-3" />
             Popular
           </Badge>
         )}
-        {dish.is_chef_recommendation && (
+        {localChefRec && (
           <Badge className="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
             <ChefHat className="h-3 w-3" />
             Chef's Pick
@@ -215,12 +242,12 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
                 <div className="flex flex-wrap gap-1.5">
                   {ALLERGEN_OPTIONS.map((option) => {
                     const Icon = option.Icon;
-                    const isSelected = (dish.allergens || []).includes(option.value);
+                    const isSelected = localAllergens.includes(option.value);
                     return (
                       <Badge
                         key={option.value}
                         variant={isSelected ? "default" : "outline"}
-                        className="cursor-pointer text-xs flex items-center gap-1 transition-all duration-150 active:scale-95"
+                        className="cursor-pointer text-xs flex items-center gap-1 active:scale-95"
                         onClick={() => handleAllergenToggle(option.value)}
                       >
                         <Icon className="h-3 w-3" />
@@ -249,34 +276,36 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
               {/* Dietary preferences */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor={`vegetarian-${dish.id}`} className="text-xs">
-                    🥬 Vegetarian
+                  <Label htmlFor={`vegetarian-${dish.id}`} className="text-xs flex items-center gap-1.5">
+                    <Salad className="h-3.5 w-3.5 text-ios-green" />
+                    Vegetarian
                   </Label>
                   <Switch
                     id={`vegetarian-${dish.id}`}
-                    checked={dish.is_vegetarian}
-                    onCheckedChange={(checked) => handleUpdate("is_vegetarian", checked)}
+                    checked={localVegetarian}
+                    onCheckedChange={() => handleToggle("is_vegetarian", localVegetarian, setLocalVegetarian)}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label htmlFor={`vegan-${dish.id}`} className="text-xs">
-                    🌱 Vegan
+                  <Label htmlFor={`vegan-${dish.id}`} className="text-xs flex items-center gap-1.5">
+                    <Sprout className="h-3.5 w-3.5 text-ios-green" />
+                    Vegan
                   </Label>
                   <Switch
                     id={`vegan-${dish.id}`}
-                    checked={dish.is_vegan}
-                    onCheckedChange={(checked) => handleUpdate("is_vegan", checked)}
+                    checked={localVegan}
+                    onCheckedChange={() => handleToggle("is_vegan", localVegan, setLocalVegan)}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label htmlFor={`spicy-${dish.id}`} className="text-xs">
-                    <Flame className="h-3 w-3 inline mr-1" />
+                  <Label htmlFor={`spicy-${dish.id}`} className="text-xs flex items-center gap-1.5">
+                    <Flame className="h-3.5 w-3.5 text-ios-red" />
                     Spicy
                   </Label>
                   <Switch
                     id={`spicy-${dish.id}`}
-                    checked={dish.is_spicy}
-                    onCheckedChange={(checked) => handleUpdate("is_spicy", checked)}
+                    checked={localSpicy}
+                    onCheckedChange={() => handleToggle("is_spicy", localSpicy, setLocalSpicy)}
                   />
                 </div>
               </div>
@@ -292,8 +321,8 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
                   </Label>
                   <Switch
                     id={`new-${dish.id}`}
-                    checked={dish.is_new}
-                    onCheckedChange={(checked) => handleUpdate("is_new", checked)}
+                    checked={localNew}
+                    onCheckedChange={() => handleToggle("is_new", localNew, setLocalNew)}
                   />
                 </div>
                 
@@ -304,8 +333,8 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
                   </Label>
                   <Switch
                     id={`special-${dish.id}`}
-                    checked={dish.is_special}
-                    onCheckedChange={(checked) => handleUpdate("is_special", checked)}
+                    checked={localSpecial}
+                    onCheckedChange={() => handleToggle("is_special", localSpecial, setLocalSpecial)}
                   />
                 </div>
                 
@@ -316,8 +345,8 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
                   </Label>
                   <Switch
                     id={`popular-${dish.id}`}
-                    checked={dish.is_popular}
-                    onCheckedChange={(checked) => handleUpdate("is_popular", checked)}
+                    checked={localPopular}
+                    onCheckedChange={() => handleToggle("is_popular", localPopular, setLocalPopular)}
                   />
                 </div>
                 
@@ -328,8 +357,8 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
                   </Label>
                   <Switch
                     id={`chef-${dish.id}`}
-                    checked={dish.is_chef_recommendation}
-                    onCheckedChange={(checked) => handleUpdate("is_chef_recommendation", checked)}
+                    checked={localChefRec}
+                    onCheckedChange={() => handleToggle("is_chef_recommendation", localChefRec, setLocalChefRec)}
                   />
                 </div>
               </div>

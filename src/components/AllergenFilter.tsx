@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { X, Wheat, Milk, Egg, Fish, Shell, Nut, Sprout, Beef, Bird, Leaf, Flame } from "lucide-react";
+import { X, Wheat, Milk, Egg, Fish, Shell, Nut, Sprout, Beef, Bird, Leaf, Flame, Salad } from "lucide-react";
 import { useMemo } from "react";
 
 export const ALLERGEN_OPTIONS = [
@@ -16,7 +16,7 @@ export const ALLERGEN_OPTIONS = [
 ] as const;
 
 export const DIETARY_OPTIONS = [
-  { value: "vegetarian", label: "Vegetarian", Icon: Leaf },
+  { value: "vegetarian", label: "Vegetarian", Icon: Salad },
   { value: "vegan", label: "Vegan", Icon: Sprout },
 ] as const;
 
@@ -81,7 +81,7 @@ export const AllergenFilter = ({
               key={option.value}
               variant={isSelected ? "default" : "outline"}
               className={cn(
-                "cursor-pointer transition-all duration-150 ease-out active:scale-95 hover:shadow-md px-3 py-1.5",
+                "cursor-pointer active:scale-95 hover:shadow-md px-3 py-1.5",
                 isSelected && "bg-ios-green hover:bg-ios-green/90"
               )}
               onClick={() => onDietaryToggle(option.value)}
@@ -102,7 +102,7 @@ export const AllergenFilter = ({
             <Badge
               key={option.value}
               variant={isSelected ? "destructive" : "outline"}
-              className="cursor-pointer transition-all duration-150 ease-out active:scale-95 hover:shadow-md px-3 py-1.5"
+              className="cursor-pointer active:scale-95 hover:shadow-md px-3 py-1.5"
               onClick={() => onAllergenToggle(option.value)}
             >
               <Icon className="h-3.5 w-3.5 mr-1.5" />

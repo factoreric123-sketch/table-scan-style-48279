@@ -15,11 +15,12 @@ const Dashboard = () => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: restaurants, isLoading } = useRestaurants();
+  const { data: restaurants, isLoading, error } = useRestaurants();
+  const restaurantList = restaurants ?? [];
   const { hasPremium, subscription, refetch } = useSubscription();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [timedOut, setTimedOut] = useState(false);
+  // removed timeout gating to avoid blocking auth/dashboard on slow backend
 
   const handleSignOut = async () => {
     await signOut();
@@ -49,58 +50,13 @@ const Dashboard = () => {
     }
   }, [searchParams, setSearchParams, refetch]);
 
-  // Safety timeout to avoid infinite loading when backend is unreachable
-  useEffect(() => {
-    if (!isLoading) {
-      setTimedOut(false);
-      return;
-    }
-    const timer = setTimeout(() => setTimedOut(true), 8000);
-    return () => clearTimeout(timer);
-  }, [isLoading]);
+  // Removed blocking timeout; show skeletons instead while loading
 
-  if (isLoading && !timedOut) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <p className="text-sm text-muted-foreground">Loading your restaurants...</p>
-        </div>
-      </div>
-    );
-  }
+  // Do not block the page during loading
 
-  if (isLoading && timedOut) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4 max-w-md text-center p-4">
-          <p className="text-lg font-medium text-foreground">Connection timeout</p>
-          <p className="text-sm text-muted-foreground">
-            Our backend is taking too long to respond. Please try again.
-          </p>
-          <Button onClick={() => window.location.reload()} variant="outline">
-            Refresh Page
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // No more timeout screen; we render dashboard skeletons instead
 
-  if (!restaurants && !isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4 max-w-md text-center p-4">
-          <p className="text-lg font-medium text-foreground">Unable to load restaurants</p>
-          <p className="text-sm text-muted-foreground">
-            We're experiencing connection issues. Please try again in a moment.
-          </p>
-          <Button onClick={() => window.location.reload()} variant="outline">
-            Refresh Page
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // If error occurs, show inline banner below
 
   return (
     <div className="min-h-screen bg-background">
@@ -130,6 +86,12 @@ const Dashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {error && (
+          <div role="alert" className="mb-4 rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">
+            We’re having trouble loading your restaurants. You can still create a new one or try again later.
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Create New Restaurant Card */}
           <button
@@ -147,13 +109,25 @@ const Dashboard = () => {
             </div>
           </button>
 
-          {/* Restaurant Cards */}
-          {restaurants?.map((restaurant) => (
+          {/* Restaurant Cards or Skeletons */}
+          {isLoading && restaurantList.length === 0 && (
+            <>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-lg border border-border p-6 animate-pulse space-y-4">
+                  <div className="h-40 w-full rounded-md bg-muted" />
+                  <div className="h-4 w-2/3 bg-muted rounded" />
+                  <div className="h-4 w-1/2 bg-muted rounded" />
+                </div>
+              ))}
+            </>
+          )}
+
+          {!isLoading && restaurantList.map((restaurant) => (
             <RestaurantCard key={restaurant.id} restaurant={restaurant} />
           ))}
         </div>
 
-        {restaurants?.length === 0 && (
+        {!isLoading && restaurantList.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground">
               You haven't created any restaurants yet. Click the card above to get started!

@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useRestaurantById, useUpdateRestaurant } from "@/hooks/useRestaurants";
 import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
@@ -11,6 +13,7 @@ import { EditableDishes } from "@/components/editor/EditableDishes";
 import { SpreadsheetView } from "@/components/editor/SpreadsheetView";
 import RestaurantHeader from "@/components/RestaurantHeader";
 import { AllergenFilter } from "@/components/AllergenFilter";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useThemeHistory } from "@/hooks/useThemeHistory";
@@ -29,6 +32,7 @@ const Editor = () => {
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
   const [selectedSpicy, setSelectedSpicy] = useState<boolean | null>(null);
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const { data: restaurant, isLoading: restaurantLoading } = useRestaurantById(restaurantId || "");
   const { data: categories = [], isLoading: categoriesLoading } = useCategories(restaurantId || "");
@@ -268,20 +272,59 @@ const Editor = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <EditorTopBar
-        restaurant={restaurant}
-        previewMode={previewMode}
-        viewMode={viewMode}
-        onViewModeChange={handleViewModeChange}
-        onPreviewToggle={() => setPreviewMode(!previewMode)}
-        onPublishToggle={handlePublishToggle}
-        onFilterToggle={handleFilterToggle}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onThemeChange={handleThemeChange}
-      />
+      <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+        <EditorTopBar
+          restaurant={restaurant}
+          previewMode={previewMode}
+          viewMode={viewMode}
+          onViewModeChange={handleViewModeChange}
+          onPreviewToggle={() => setPreviewMode(!previewMode)}
+          onPublishToggle={handlePublishToggle}
+          onFilterToggle={handleFilterToggle}
+          filterOpen={filterOpen}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onThemeChange={handleThemeChange}
+          filterSheetTrigger={
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-9 w-9 relative"
+              >
+                <Filter className="h-5 w-5" />
+                {(selectedAllergens.length > 0 || selectedDietary.length > 0 || selectedSpicy !== null || selectedBadges.length > 0) && (
+                  <span className="absolute top-1 right-1 h-2 w-2 bg-primary rounded-full" />
+                )}
+              </Button>
+            </SheetTrigger>
+          }
+        />
+
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader className="mb-6">
+            <SheetTitle>Filter Menu</SheetTitle>
+          </SheetHeader>
+          {previewMode && restaurant.show_allergen_filter !== false && (
+            <AllergenFilter
+              selectedAllergens={selectedAllergens}
+              selectedDietary={selectedDietary}
+              selectedSpicy={selectedSpicy}
+              selectedBadges={selectedBadges}
+              onAllergenToggle={handleAllergenToggle}
+              onDietaryToggle={handleDietaryToggle}
+              onSpicyToggle={handleSpicyToggle}
+              onBadgeToggle={handleBadgeToggle}
+              onClear={handleClearFilters}
+              allergenOrder={restaurant.allergen_filter_order as string[] | undefined}
+              dietaryOrder={restaurant.dietary_filter_order as string[] | undefined}
+              badgeOrder={restaurant.badge_display_order as string[] | undefined}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
 
       <RestaurantHeader
         name={restaurant.name}
@@ -307,24 +350,6 @@ const Editor = () => {
             onSubcategoryChange={setActiveSubcategory}
             categoryId={activeCategory}
             previewMode={previewMode}
-          />
-        )}
-
-        {/* Show filter in preview mode */}
-        {previewMode && restaurant.show_allergen_filter !== false && (
-          <AllergenFilter
-            selectedAllergens={selectedAllergens}
-            selectedDietary={selectedDietary}
-            selectedSpicy={selectedSpicy}
-            selectedBadges={selectedBadges}
-            onAllergenToggle={handleAllergenToggle}
-            onDietaryToggle={handleDietaryToggle}
-            onSpicyToggle={handleSpicyToggle}
-            onBadgeToggle={handleBadgeToggle}
-            onClear={handleClearFilters}
-            allergenOrder={restaurant.allergen_filter_order as string[] | undefined}
-            dietaryOrder={restaurant.dietary_filter_order as string[] | undefined}
-            badgeOrder={restaurant.badge_display_order as string[] | undefined}
           />
         )}
 

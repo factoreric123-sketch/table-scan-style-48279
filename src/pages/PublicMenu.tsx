@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { Bookmark, Share2, Menu as MenuIcon, Crown } from "lucide-react";
+import { Bookmark, Share2, Menu as MenuIcon, Crown, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import CategoryNav from "@/components/CategoryNav";
 import SubcategoryNav from "@/components/SubcategoryNav";
 import MenuGrid from "@/components/MenuGrid";
@@ -26,6 +27,7 @@ const PublicMenu = () => {
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
   const [selectedSpicy, setSelectedSpicy] = useState<boolean | null>(null);
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   // Apply restaurant theme to public menu
   useThemePreview(restaurant?.theme as any, !!restaurant);
@@ -247,6 +249,41 @@ const PublicMenu = () => {
             <Button variant="ghost" size="icon" className="h-9 w-9">
               <Share2 className="h-5 w-5" />
             </Button>
+            {restaurant?.show_allergen_filter !== false && (
+              <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+                <SheetTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-9 w-9 relative"
+                  >
+                    <Filter className="h-5 w-5" />
+                    {(selectedAllergens.length > 0 || selectedDietary.length > 0 || selectedSpicy !== null || selectedBadges.length > 0) && (
+                      <span className="absolute top-1 right-1 h-2 w-2 bg-primary rounded-full" />
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+                  <SheetHeader className="mb-6">
+                    <SheetTitle>Filter Menu</SheetTitle>
+                  </SheetHeader>
+                  <AllergenFilter
+                    selectedAllergens={selectedAllergens}
+                    selectedDietary={selectedDietary}
+                    selectedSpicy={selectedSpicy}
+                    selectedBadges={selectedBadges}
+                    onAllergenToggle={handleAllergenToggle}
+                    onDietaryToggle={handleDietaryToggle}
+                    onSpicyToggle={handleSpicyToggle}
+                    onBadgeToggle={handleBadgeToggle}
+                    onClear={handleClearFilters}
+                    allergenOrder={restaurant.allergen_filter_order as string[] | undefined}
+                    dietaryOrder={restaurant.dietary_filter_order as string[] | undefined}
+                    badgeOrder={restaurant.badge_display_order as string[] | undefined}
+                  />
+                </SheetContent>
+              </Sheet>
+            )}
           </div>
         </div>
       </header>
@@ -281,23 +318,6 @@ const PublicMenu = () => {
         )}
       </div>
 
-      {/* Allergen Filter */}
-      {restaurant?.show_allergen_filter !== false && (
-        <AllergenFilter
-          selectedAllergens={selectedAllergens}
-          selectedDietary={selectedDietary}
-          selectedSpicy={selectedSpicy}
-          selectedBadges={selectedBadges}
-          onAllergenToggle={handleAllergenToggle}
-          onDietaryToggle={handleDietaryToggle}
-          onSpicyToggle={handleSpicyToggle}
-          onBadgeToggle={handleBadgeToggle}
-          onClear={handleClearFilters}
-          allergenOrder={restaurant.allergen_filter_order as string[] | undefined}
-          dietaryOrder={restaurant.dietary_filter_order as string[] | undefined}
-          badgeOrder={restaurant.badge_display_order as string[] | undefined}
-        />
-      )}
 
       {/* Main Content */}
       <main>

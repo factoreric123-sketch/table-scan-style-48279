@@ -17,11 +17,13 @@ interface EditorTopBarProps {
   onPreviewToggle: () => void;
   onPublishToggle: () => void;
   onFilterToggle: () => void;
+  filterOpen?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
   onThemeChange?: (theme: Theme) => void;
+  filterSheetTrigger?: React.ReactNode;
 }
 
 export const EditorTopBar = ({
@@ -32,11 +34,13 @@ export const EditorTopBar = ({
   onPreviewToggle,
   onPublishToggle,
   onFilterToggle,
+  filterOpen = false,
   onUndo,
   onRedo,
   canUndo = false,
   canRedo = false,
   onThemeChange,
+  filterSheetTrigger,
 }: EditorTopBarProps) => {
   const navigate = useNavigate();
   const [showQRModal, setShowQRModal] = useState(false);
@@ -107,6 +111,8 @@ export const EditorTopBar = ({
                 )}
               </Button>
             )}
+
+            {previewMode && restaurant.show_allergen_filter !== false && filterSheetTrigger}
 
             <Button
               variant="outline"

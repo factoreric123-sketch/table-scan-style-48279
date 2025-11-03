@@ -1,18 +1,16 @@
 import { Badge } from "@/components/ui/badge";
-import { X, Wheat, Milk, Egg, Fish, Shell, Nut, Sprout, Beef, Bird, Flame, Salad, Sparkles, Star, TrendingUp, ChefHat } from "lucide-react";
-import { useMemo, memo, useCallback } from "react";
+import { X, Wheat, Milk, Egg, Fish, Shell, Nut, Sprout, Flame, Salad, Sparkles, Star, TrendingUp, ChefHat, ChevronDown } from "lucide-react";
+import { useMemo, memo, useCallback, useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export const ALLERGEN_OPTIONS = [
-  { value: "gluten", label: "Gluten", Icon: Wheat },
-  { value: "dairy", label: "Dairy", Icon: Milk },
-  { value: "eggs", label: "Eggs", Icon: Egg },
-  { value: "fish", label: "Fish", Icon: Fish },
-  { value: "shellfish", label: "Shellfish", Icon: Shell },
-  { value: "nuts", label: "Nuts", Icon: Nut },
-  { value: "soy", label: "Soy", Icon: Sprout },
-  { value: "pork", label: "Pork", Icon: Beef },
-  { value: "beef", label: "Beef", Icon: Beef },
-  { value: "poultry", label: "Poultry", Icon: Bird },
+  { value: "gluten", label: "Gluten-Free", Icon: Wheat },
+  { value: "dairy", label: "Dairy-Free", Icon: Milk },
+  { value: "eggs", label: "Egg-Free", Icon: Egg },
+  { value: "fish", label: "Fish-Free", Icon: Fish },
+  { value: "shellfish", label: "Shellfish-Free", Icon: Shell },
+  { value: "nuts", label: "Nut-Free", Icon: Nut },
+  { value: "soy", label: "Soy-Free", Icon: Sprout },
 ] as const;
 
 export const DIETARY_OPTIONS = [
@@ -86,106 +84,118 @@ export const AllergenFilter = memo(({
       .filter((o): o is typeof BADGE_OPTIONS[number] => o !== undefined);
   }, [badgeOrder]);
 
+  const [allergensOpen, setAllergensOpen] = useState(false);
+
   return (
-    <div className="px-6 py-4 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-foreground">Filter by dietary restrictions</h3>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-foreground">Filters</h3>
         {hasActiveFilters && (
           <button
             onClick={onClear}
-            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors duration-150"
+            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors duration-200 rounded-lg px-3 py-1.5 hover:bg-muted/50"
           >
-            <X className="h-3 w-3" />
+            <X className="h-4 w-4" />
             Clear all
           </button>
         )}
       </div>
 
       {/* Dietary preferences */}
-      <div className="flex flex-wrap gap-2 mb-3">
-        {sortedDietary.map((option) => {
-          const Icon = option.Icon;
-          const isSelected = selectedDietary.includes(option.value);
-          return (
-            <Badge
-              key={option.value}
-              variant={isSelected ? "default" : "outline"}
-              className={cn(
-                "cursor-pointer ease-out active:scale-95 hover:shadow-md px-3 py-1.5 gap-1.5",
-                isSelected && "bg-ios-green hover:bg-ios-green/90"
-              )}
-              onClick={() => onDietaryToggle(option.value)}
-            >
-              {isSelected && <Icon className="h-3.5 w-3.5" />}
-              {option.label}
-            </Badge>
-          );
-        })}
-        
-        {/* Spicy filter - tri-state */}
-        <Badge
-          variant={selectedSpicy === null ? "outline" : "default"}
-          className={cn(
-            "cursor-pointer ease-out active:scale-95 hover:shadow-md px-3 py-1.5 gap-1.5",
-            selectedSpicy === true && "bg-orange-500 hover:bg-orange-500/90",
-            selectedSpicy === false && "bg-blue-500 hover:bg-blue-500/90"
-          )}
-          onClick={() => {
-            if (selectedSpicy === null) onSpicyToggle(true);
-            else if (selectedSpicy === true) onSpicyToggle(false);
-            else onSpicyToggle(null);
-          }}
-        >
-          {selectedSpicy !== null && <Flame className="h-3.5 w-3.5" />}
-          {selectedSpicy === null ? "Spicy" : selectedSpicy ? "Spicy Only" : "Not Spicy"}
-        </Badge>
-      </div>
-
-      {/* Allergen filters */}
-      <div className="flex flex-wrap gap-2">
-        {sortedAllergens.map((option) => {
-          const Icon = option.Icon;
-          const isSelected = selectedAllergens.includes(option.value);
-          return (
-            <Badge
-              key={option.value}
-              variant={isSelected ? "destructive" : "outline"}
-              className="cursor-pointer ease-out active:scale-95 hover:shadow-md px-3 py-1.5 gap-1.5"
-              onClick={() => onAllergenToggle(option.value)}
-            >
-              {isSelected && <Icon className="h-3.5 w-3.5" />}
-              {capitalize(option.label)}
-            </Badge>
-          );
-        })}
-      </div>
-
-      {/* Badges & Labels */}
-      {sortedBadges.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
-          <div className="w-full text-xs font-medium text-muted-foreground mb-1">Badges & Labels</div>
-          {sortedBadges.map((option) => {
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium text-muted-foreground">Dietary Options</h4>
+        <div className="flex flex-wrap gap-2">
+          {sortedDietary.map((option) => {
             const Icon = option.Icon;
-            const isSelected = selectedBadges.includes(option.value);
+            const isSelected = selectedDietary.includes(option.value);
             return (
               <Badge
                 key={option.value}
                 variant={isSelected ? "default" : "outline"}
-                className="cursor-pointer ease-out active:scale-95 hover:shadow-md px-3 py-1.5 gap-1.5"
-                onClick={() => onBadgeToggle(option.value)}
+                className={cn(
+                  "cursor-pointer transition-all duration-200 hover:scale-105 px-3 py-2 gap-1.5 rounded-full",
+                  isSelected && "bg-primary hover:bg-primary/90 shadow-sm"
+                )}
+                onClick={() => onDietaryToggle(option.value)}
               >
                 {isSelected && <Icon className="h-3.5 w-3.5" />}
                 {option.label}
               </Badge>
             );
           })}
+          
+          {/* Spicy filter - tri-state */}
+          <Badge
+            variant={selectedSpicy === null ? "outline" : "default"}
+            className={cn(
+              "cursor-pointer transition-all duration-200 hover:scale-105 px-3 py-2 gap-1.5 rounded-full",
+              selectedSpicy === true && "bg-orange-500 hover:bg-orange-500/90 shadow-sm",
+              selectedSpicy === false && "bg-blue-500 hover:bg-blue-500/90 shadow-sm"
+            )}
+            onClick={() => {
+              if (selectedSpicy === null) onSpicyToggle(true);
+              else if (selectedSpicy === true) onSpicyToggle(false);
+              else onSpicyToggle(null);
+            }}
+          >
+            {selectedSpicy !== null && <Flame className="h-3.5 w-3.5" />}
+            {selectedSpicy === null ? "Spicy" : selectedSpicy ? "Spicy Only" : "Not Spicy"}
+          </Badge>
         </div>
-      )}
+      </div>
 
-      {hasActiveFilters && (
-        <p className="text-xs text-muted-foreground mt-3">
-          Filtering by selected preferences, allergens, and badges
-        </p>
+      {/* Allergen filters - Collapsible */}
+      <Collapsible open={allergensOpen} onOpenChange={setAllergensOpen} className="space-y-2">
+        <CollapsibleTrigger className="flex items-center justify-between w-full group">
+          <h4 className="text-sm font-medium text-muted-foreground">Allergies</h4>
+          <ChevronDown className={cn(
+            "h-4 w-4 text-muted-foreground transition-transform duration-200",
+            allergensOpen && "rotate-180"
+          )} />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-2">
+          <div className="flex flex-wrap gap-2 pt-1">
+            {sortedAllergens.map((option) => {
+              const Icon = option.Icon;
+              const isSelected = selectedAllergens.includes(option.value);
+              return (
+                <Badge
+                  key={option.value}
+                  variant={isSelected ? "destructive" : "outline"}
+                  className="cursor-pointer transition-all duration-200 hover:scale-105 px-3 py-2 gap-1.5 rounded-full"
+                  onClick={() => onAllergenToggle(option.value)}
+                >
+                  {isSelected && <Icon className="h-3.5 w-3.5" />}
+                  {option.label}
+                </Badge>
+              );
+            })}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Badges & Labels */}
+      {sortedBadges.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-muted-foreground">Badges & Labels</h4>
+          <div className="flex flex-wrap gap-2">
+            {sortedBadges.map((option) => {
+              const Icon = option.Icon;
+              const isSelected = selectedBadges.includes(option.value);
+              return (
+                <Badge
+                  key={option.value}
+                  variant={isSelected ? "default" : "outline"}
+                  className="cursor-pointer transition-all duration-200 hover:scale-105 px-3 py-2 gap-1.5 rounded-full"
+                  onClick={() => onBadgeToggle(option.value)}
+                >
+                  {isSelected && <Icon className="h-3.5 w-3.5" />}
+                  {option.label}
+                </Badge>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );

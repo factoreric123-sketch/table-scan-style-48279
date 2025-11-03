@@ -35,14 +35,17 @@ export const useCreateDishModifier = () => {
 
   return useMutation({
     mutationFn: async (modifier: Omit<DishModifier, "id" | "created_at">) => {
-      // Validate price format
-      if (!modifier.price || !/^[+]?\$?\d+(\.\d{2})?$/.test(modifier.price)) {
-        throw new Error("Invalid price format. Use format like +$1.00 or 1.00");
+      // Normalize price - accept various formats
+      let normalizedPrice = modifier.price.replace(/[^0-9.+]/g, "");
+      if (normalizedPrice && !normalizedPrice.includes(".")) {
+        normalizedPrice += ".00";
+      } else if (normalizedPrice.split(".")[1]?.length === 1) {
+        normalizedPrice += "0";
       }
       
       const { data, error } = await supabase
         .from("dish_modifiers")
-        .insert(modifier)
+        .insert({ ...modifier, price: normalizedPrice || "0.00" })
         .select()
         .single();
 
@@ -51,6 +54,7 @@ export const useCreateDishModifier = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["dish-modifiers", variables.dish_id] });
+      toast.success("Modifier added");
     },
   });
 };

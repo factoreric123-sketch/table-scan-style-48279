@@ -35,14 +35,17 @@ export const useCreateDishOption = () => {
 
   return useMutation({
     mutationFn: async (option: Omit<DishOption, "id" | "created_at">) => {
-      // Validate price format
-      if (!option.price || !/^\$?\d+(\.\d{2})?$/.test(option.price)) {
-        throw new Error("Invalid price format. Use format like $9.99 or 9.99");
+      // Normalize price - accept various formats
+      let normalizedPrice = option.price.replace(/[^0-9.]/g, "");
+      if (normalizedPrice && !normalizedPrice.includes(".")) {
+        normalizedPrice += ".00";
+      } else if (normalizedPrice.split(".")[1]?.length === 1) {
+        normalizedPrice += "0";
       }
       
       const { data, error } = await supabase
         .from("dish_options")
-        .insert(option)
+        .insert({ ...option, price: normalizedPrice || "0.00" })
         .select()
         .single();
 
@@ -51,6 +54,7 @@ export const useCreateDishOption = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["dish-options", variables.dish_id] });
+      toast.success("Option added");
     },
   });
 };

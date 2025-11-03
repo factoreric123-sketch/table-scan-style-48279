@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { useDebounce } from "use-debounce";
 import { CSS } from "@dnd-kit/utilities";
@@ -83,11 +83,31 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
     opacity: isDragging ? 0.3 : 1,
   };
 
+  // Batched update mechanism to prevent lag
+  const pendingUpdates = useRef<Partial<Dish>>({});
+  const updateTimer = useRef<any>(null);
+
+  const scheduleUpdate = useCallback((updates: Partial<Dish>) => {
+    pendingUpdates.current = { ...pendingUpdates.current, ...updates };
+    
+    if (updateTimer.current) {
+      clearTimeout(updateTimer.current);
+    }
+    
+    updateTimer.current = setTimeout(() => {
+      const toUpdate = { ...pendingUpdates.current };
+      pendingUpdates.current = {};
+      updateTimer.current = null;
+      
+      updateDish.mutate({
+        id: dish.id,
+        updates: toUpdate,
+      });
+    }, 150);
+  }, [dish.id, updateDish]);
+
   const handleUpdate = (field: keyof Dish, value: string | boolean | string[] | number | null) => {
-    updateDish.mutate({
-      id: dish.id,
-      updates: { [field]: value },
-    });
+    scheduleUpdate({ [field]: value });
   };
 
   const handleAllergenToggle = (allergen: string) => {
@@ -95,12 +115,12 @@ export const SortableDish = ({ dish, subcategoryId }: SortableDishProps) => {
       ? localAllergens.filter((a) => a !== allergen)
       : [...localAllergens, allergen];
     setLocalAllergens(updated);
-    handleUpdate("allergens", updated);
+    scheduleUpdate({ allergens: updated });
   };
 
   const handleToggle = (field: keyof Dish, currentValue: boolean, setter: (v: boolean) => void) => {
     setter(!currentValue);
-    handleUpdate(field, !currentValue);
+    scheduleUpdate({ [field]: !currentValue });
   };
 
   const handleDelete = () => {

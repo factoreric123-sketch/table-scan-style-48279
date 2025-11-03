@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRestaurantById, useUpdateRestaurant } from "@/hooks/useRestaurants";
 import { useCategories } from "@/hooks/useCategories";
-import { useSubcategoriesByRestaurant } from "@/hooks/useSubcategories";
-import { useDishesByRestaurant } from "@/hooks/useDishes";
+import { useSubcategories } from "@/hooks/useSubcategories";
+import { useDishes } from "@/hooks/useDishes";
 import { EditorTopBar } from "@/components/editor/EditorTopBar";
 import { EditableCategories } from "@/components/editor/EditableCategories";
 import { EditableSubcategories } from "@/components/editor/EditableSubcategories";
@@ -19,16 +19,17 @@ import { Theme } from "@/lib/types/theme";
 const Editor = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
   const navigate = useNavigate();
-  const { data: restaurant, isLoading: restaurantLoading } = useRestaurantById(restaurantId || "");
-  const { data: categories = [], isLoading: categoriesLoading } = useCategories(restaurantId || "");
-  const { data: subcategories = [], isLoading: subcategoriesLoading } = useSubcategoriesByRestaurant(restaurantId || "");
-  const { data: dishes = [], isLoading: dishesLoading } = useDishesByRestaurant(restaurantId || "");
-  const updateRestaurant = useUpdateRestaurant();
-
+  
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [activeSubcategory, setActiveSubcategory] = useState<string>("");
   const [previewMode, setPreviewMode] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>(restaurant?.editor_view_mode || 'grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+
+  const { data: restaurant, isLoading: restaurantLoading } = useRestaurantById(restaurantId || "");
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories(restaurantId || "");
+  const { data: subcategories = [], isLoading: subcategoriesLoading } = useSubcategories(activeCategory);
+  const { data: dishes = [], isLoading: dishesLoading } = useDishes(activeSubcategory);
+  const updateRestaurant = useUpdateRestaurant();
 
   // Theme history for undo/redo
   const { canUndo, canRedo, undo, redo, push, reset } = useThemeHistory(
@@ -171,8 +172,6 @@ const Editor = () => {
   }
 
   const activeCategoryData = categories.find(c => c.id === activeCategory);
-  const subsForActiveCategory = subcategories.filter(s => s.category_id === activeCategory);
-  const dishesForActiveSubcategory = dishes.filter(d => d.subcategory_id === activeSubcategory);
 
   return (
     <div className="min-h-screen bg-background">
@@ -209,7 +208,7 @@ const Editor = () => {
 
         {activeCategoryData && (
           <EditableSubcategories
-            subcategories={subsForActiveCategory}
+            subcategories={subcategories}
             activeSubcategory={activeSubcategory}
             onSubcategoryChange={setActiveSubcategory}
             categoryId={activeCategory}
@@ -219,7 +218,7 @@ const Editor = () => {
 
         {activeSubcategory && viewMode === 'grid' && (
           <EditableDishes
-            dishes={dishesForActiveSubcategory}
+            dishes={dishes}
             subcategoryId={activeSubcategory}
             previewMode={previewMode}
           />
@@ -227,7 +226,7 @@ const Editor = () => {
 
         {activeSubcategory && viewMode === 'table' && (
           <SpreadsheetView
-            dishes={dishesForActiveSubcategory}
+            dishes={dishes}
             categories={categories}
             subcategories={subcategories}
             restaurantId={restaurant.id}

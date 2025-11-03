@@ -67,9 +67,34 @@ export const useCreateSubcategory = () => {
       if (error) throw error;
       return data;
     },
+    onMutate: async (subcategory) => {
+      if (!subcategory.category_id) return;
+      
+      await queryClient.cancelQueries({ queryKey: ["subcategories", subcategory.category_id] });
+      const previous = queryClient.getQueryData<Subcategory[]>(["subcategories", subcategory.category_id]);
+      
+      if (previous) {
+        const tempSub: Subcategory = {
+          id: `temp-${Date.now()}`,
+          category_id: subcategory.category_id,
+          name: subcategory.name || "New Subcategory",
+          order_index: subcategory.order_index ?? previous.length,
+          created_at: new Date().toISOString(),
+        };
+        queryClient.setQueryData<Subcategory[]>(["subcategories", subcategory.category_id], [...previous, tempSub]);
+      }
+      
+      return { previous, categoryId: subcategory.category_id };
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["subcategories", data.category_id] });
       queryClient.invalidateQueries({ queryKey: ["subcategories", "restaurant"] });
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous && context.categoryId) {
+        queryClient.setQueryData(["subcategories", context.categoryId], context.previous);
+      }
+      toast.error("Failed to create subcategory");
     },
   });
 };

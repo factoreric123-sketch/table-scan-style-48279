@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Download, Upload, Trash2, Plus } from "lucide-react";
 import { SpreadsheetRow } from "./SpreadsheetRow";
 import { ExcelImportDialog } from "./ExcelImportDialog";
-import type { Dish } from "@/hooks/useDishes";
+import { useCreateDish, type Dish } from "@/hooks/useDishes";
 import type { Category } from "@/hooks/useCategories";
 import type { Subcategory } from "@/hooks/useSubcategories";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 interface SpreadsheetViewProps {
   dishes: Dish[];
@@ -31,6 +30,7 @@ export const SpreadsheetView = ({
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [importData, setImportData] = useState<any[]>([]);
   const parentRef = useRef<HTMLDivElement>(null);
+  const createDish = useCreateDish();
 
   const rowVirtualizer = useVirtualizer({
     count: dishes.length,
@@ -115,31 +115,14 @@ export const SpreadsheetView = ({
     setSelectedRows(new Set());
   };
 
-  const handleAddDish = async () => {
-    const subcategory = subcategories.find((s) => s.id === activeSubcategoryId);
-    if (!subcategory) {
-      toast.error("Please select a subcategory first");
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from("dishes")
-        .insert({
-          subcategory_id: activeSubcategoryId,
-          name: "New Dish",
-          description: "",
-          price: "0",
-          order_index: dishes.length,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      toast.success("Dish added successfully");
-    } catch (error) {
-      toast.error("Failed to add dish");
-    }
+  const handleAddDish = () => {
+    createDish.mutate({
+      subcategory_id: activeSubcategoryId,
+      name: "New Dish",
+      description: "",
+      price: "0.00",
+      order_index: dishes.length,
+    });
   };
 
   return (
@@ -233,9 +216,10 @@ export const SpreadsheetView = ({
           onClick={handleAddDish}
           variant="outline"
           className="gap-2"
+          disabled={createDish.isPending}
         >
           <Plus className="h-4 w-4" />
-          Add Dish
+          {createDish.isPending ? "Adding..." : "Add Dish"}
         </Button>
       </div>
 

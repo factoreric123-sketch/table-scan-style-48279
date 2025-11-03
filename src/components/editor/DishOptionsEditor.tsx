@@ -96,33 +96,32 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
     })
   );
 
-  const handleToggleOptions = async (enabled: boolean) => {
-    await updateDish.mutateAsync({
+  const handleToggleOptions = (enabled: boolean) => {
+    updateDish.mutate({
       id: dishId,
       updates: { has_options: enabled },
     });
-    toast.success(enabled ? "Pricing options enabled" : "Pricing options disabled");
   };
 
-  const handleAddOption = async () => {
+  const handleAddOption = () => {
     const newOrderIndex = options.length;
-    await createOption.mutateAsync({
+    createOption.mutate({
       dish_id: dishId,
-      name: "",
-      price: "",
+      name: "Size",
+      price: "0.00",
       order_index: newOrderIndex,
     });
   };
 
-  const handleUpdateOption = async (id: string, field: "name" | "price", value: string) => {
-    await updateOption.mutateAsync({
+  const handleUpdateOption = (id: string, field: "name" | "price", value: string) => {
+    updateOption.mutate({
       id,
       updates: { [field]: value },
     });
   };
 
-  const handleDeleteOption = async (id: string) => {
-    await deleteOption.mutateAsync({ id, dishId });
+  const handleDeleteOption = (id: string) => {
+    deleteOption.mutate({ id, dishId });
   };
 
   const handleOptionDragEnd = (event: DragEndEvent) => {
@@ -140,25 +139,25 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
     updateOptionsOrder.mutate({ options: reordered, dishId });
   };
 
-  const handleAddModifier = async () => {
+  const handleAddModifier = () => {
     const newOrderIndex = modifiers.length;
-    await createModifier.mutateAsync({
+    createModifier.mutate({
       dish_id: dishId,
-      name: "",
-      price: "",
+      name: "Extra",
+      price: "0.00",
       order_index: newOrderIndex,
     });
   };
 
-  const handleUpdateModifier = async (id: string, field: "name" | "price", value: string) => {
-    await updateModifier.mutateAsync({
+  const handleUpdateModifier = (id: string, field: "name" | "price", value: string) => {
+    updateModifier.mutate({
       id,
       updates: { [field]: value },
     });
   };
 
-  const handleDeleteModifier = async (id: string) => {
-    await deleteModifier.mutateAsync({ id, dishId });
+  const handleDeleteModifier = (id: string) => {
+    deleteModifier.mutate({ id, dishId });
   };
 
   const handleModifierDragEnd = (event: DragEndEvent) => {

@@ -31,9 +31,7 @@ export const EditableSubcategories = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3,
-        delay: 0,
-        tolerance: 5,
+        distance: 8,
       },
     })
   );

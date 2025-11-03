@@ -82,7 +82,7 @@ export const useCreateDish = () => {
 
       const { data, error } = await supabase
         .from("dishes")
-        .insert([dish])
+        .insert([dish as any])
         .select()
         .single();
 

@@ -22,20 +22,31 @@ export const ThemeSettingsDialog = ({
 
   useEffect(() => {
     if (restaurant.theme) {
-      setMode(restaurant.theme.mode || "dark");
-      setPrimaryColor(restaurant.theme.primaryColor || "#ffffff");
+      setMode(restaurant.theme.visual?.mode || "dark");
+      setPrimaryColor(restaurant.theme.colors?.primary ? `hsl(${restaurant.theme.colors.primary})` : "#ffffff");
     }
   }, [restaurant.theme]);
 
   const handleSave = async () => {
     try {
+      // Convert the primary color back to HSL string without "hsl()" wrapper
+      const hslMatch = primaryColor.match(/hsl\(([^)]+)\)/);
+      const hslValue = hslMatch ? hslMatch[1] : primaryColor;
+      
       await updateRestaurant.mutateAsync({
         id: restaurant.id,
         updates: {
           theme: {
-            mode,
-            primaryColor,
-          },
+            ...restaurant.theme,
+            visual: {
+              ...restaurant.theme?.visual,
+              mode,
+            },
+            colors: {
+              ...restaurant.theme?.colors,
+              primary: hslValue,
+            },
+          } as any,
         },
       });
       toast.success("Theme updated");

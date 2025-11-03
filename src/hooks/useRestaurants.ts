@@ -32,7 +32,7 @@ export const useRestaurants = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as Restaurant[];
+      return data as unknown as Restaurant[];
     },
     staleTime: 1000 * 60 * 2, // 2 minutes - restaurants don't change often
     gcTime: 1000 * 60 * 15, // 15 minutes cache
@@ -50,7 +50,7 @@ export const useRestaurant = (slug: string) => {
         .maybeSingle();
 
       if (error) throw error;
-      return data as Restaurant | null;
+      return data as unknown as Restaurant | null;
     },
     enabled: !!slug,
     staleTime: 1000 * 60 * 3, // 3 minutes - public menus are mostly static
@@ -69,7 +69,7 @@ export const useRestaurantById = (id: string) => {
         .single();
 
       if (error) throw error;
-      return data as Restaurant;
+      return data as unknown as Restaurant;
     },
     enabled: !!id,
     staleTime: 1000 * 30, // 30 seconds - editor needs fresher data
@@ -84,12 +84,12 @@ export const useCreateRestaurant = () => {
     mutationFn: async (restaurant: Partial<Restaurant>) => {
       const { data, error } = await supabase
         .from("restaurants")
-        .insert([restaurant])
+        .insert([restaurant as any])
         .select()
         .single();
 
       if (error) throw error;
-      return data as Restaurant;
+      return data as unknown as Restaurant;
     },
     onMutate: async (restaurant) => {
       // Optimistic update
@@ -136,13 +136,13 @@ export const useUpdateRestaurant = () => {
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Restaurant> }) => {
       const { data, error } = await supabase
         .from("restaurants")
-        .update(updates)
+        .update(updates as any)
         .eq("id", id)
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      return data as unknown as Restaurant;
     },
     onMutate: async ({ id, updates }) => {
       // Optimistic update

@@ -33,7 +33,7 @@ export const DashboardCardSkeleton = memo(() => (
   </div>
 ));
 
-Dashboard Card Skeleton.displayName = "DashboardCardSkeleton";
+DashboardCardSkeleton.displayName = "DashboardCardSkeleton";
 
 // Dish card skeleton for menus
 export const DishCardSkeleton = memo(() => (

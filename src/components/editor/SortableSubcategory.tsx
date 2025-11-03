@@ -63,14 +63,9 @@ export const SortableSubcategory = ({
         className="group relative shrink-0 mx-1"
       >
         <div
-          {...attributes}
-          {...listeners}
-          onClick={() => onSubcategoryChange(subcategory.id)}
-          role="button"
-          aria-pressed={isActive}
           className={`
-            text-xs font-bold uppercase tracking-wider whitespace-nowrap pb-3 transition-all relative flex items-center gap-2 select-none
-            min-w-[100px] cursor-grab active:cursor-grabbing
+            text-xs font-bold uppercase tracking-wider whitespace-nowrap pb-3 transition-all relative flex items-center gap-2
+            min-w-[100px]
             ${isActive 
               ? 'text-foreground' 
               : 'text-muted-foreground hover:text-foreground'
@@ -78,10 +73,19 @@ export const SortableSubcategory = ({
             ${isActive ? 'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-foreground' : ''}
           `}
         >
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+          <span 
+            {...attributes}
+            {...listeners}
+            className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+          >
             <GripVertical className="h-3 w-3" />
           </span>
-          <div onClick={(e) => e.stopPropagation()}>
+          <div 
+            onClick={() => onSubcategoryChange(subcategory.id)}
+            role="button"
+            aria-pressed={isActive}
+            className="cursor-pointer"
+          >
             <InlineEdit
               value={subcategory.name}
               onSave={handleNameUpdate}

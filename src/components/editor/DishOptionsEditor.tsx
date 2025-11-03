@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,13 +80,14 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
   const [localOptions, setLocalOptions] = useState<DishOption[]>([]);
   const [localModifiers, setLocalModifiers] = useState<DishModifier[]>([]);
   
-  useState(() => {
+  // Sync local state with fetched data
+  useEffect(() => {
     setLocalOptions(options);
-  });
+  }, [options]);
   
-  useState(() => {
+  useEffect(() => {
     setLocalModifiers(modifiers);
-  });
+  }, [modifiers]);
   
   const sensors = useSensors(
     useSensor(PointerSensor),

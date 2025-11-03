@@ -33,6 +33,11 @@ export const useCreateDishOption = () => {
 
   return useMutation({
     mutationFn: async (option: Omit<DishOption, "id" | "created_at">) => {
+      // Validate price format
+      if (!option.price || !/^\$?\d+(\.\d{2})?$/.test(option.price)) {
+        throw new Error("Invalid price format. Use format like $9.99 or 9.99");
+      }
+      
       const { data, error } = await supabase
         .from("dish_options")
         .insert(option)
@@ -44,7 +49,6 @@ export const useCreateDishOption = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["dish-options", variables.dish_id] });
-      queryClient.invalidateQueries({ queryKey: ["dishes"] });
     },
   });
 };
@@ -102,7 +106,7 @@ export const useUpdateDishOptionsOrder = () => {
         order_index: option.order_index,
       }));
 
-      const { error } = await supabase.rpc("batch_update_order_indexes", {
+      const { error } = await supabase.rpc("batch_update_order_indexes_optimized", {
         table_name: "dish_options",
         updates: updates,
       });

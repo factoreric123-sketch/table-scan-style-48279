@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRestaurantById, useUpdateRestaurant } from "@/hooks/useRestaurants";
 import { useCategories } from "@/hooks/useCategories";
-import { useSubcategoriesByRestaurant } from "@/hooks/useSubcategories";
-import { useDishesByRestaurant } from "@/hooks/useDishes";
+import { useSubcategories } from "@/hooks/useSubcategories";
+import { useDishes } from "@/hooks/useDishes";
 import { EditorTopBar } from "@/components/editor/EditorTopBar";
 import { EditableCategories } from "@/components/editor/EditableCategories";
 import { EditableSubcategories } from "@/components/editor/EditableSubcategories";
@@ -21,14 +21,16 @@ const Editor = () => {
   const navigate = useNavigate();
   const { data: restaurant, isLoading: restaurantLoading } = useRestaurantById(restaurantId || "");
   const { data: categories = [], isLoading: categoriesLoading } = useCategories(restaurantId || "");
-  const { data: subcategories = [], isLoading: subcategoriesLoading } = useSubcategoriesByRestaurant(restaurantId || "");
-  const { data: dishes = [], isLoading: dishesLoading } = useDishesByRestaurant(restaurantId || "");
   const updateRestaurant = useUpdateRestaurant();
 
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [activeSubcategory, setActiveSubcategory] = useState<string>("");
   const [previewMode, setPreviewMode] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>(restaurant?.editor_view_mode || 'grid');
+
+  // Fetch subcategories for active category and dishes for active subcategory
+  const { data: subcategories = [], isLoading: subcategoriesLoading } = useSubcategories(activeCategory || "");
+  const { data: dishes = [], isLoading: dishesLoading } = useDishes(activeSubcategory || "");
 
   // Theme history for undo/redo
   const { canUndo, canRedo, undo, redo, push, reset } = useThemeHistory(
@@ -86,11 +88,10 @@ const Editor = () => {
 
   // Set initial active subcategory when category changes
   useEffect(() => {
-    const subsForActiveCategory = subcategories.filter(s => s.category_id === activeCategory);
-    if (subsForActiveCategory.length > 0 && !activeSubcategory) {
-      setActiveSubcategory(subsForActiveCategory[0].id);
+    if (subcategories.length > 0 && !activeSubcategory) {
+      setActiveSubcategory(subcategories[0].id);
     }
-  }, [subcategories, activeCategory, activeSubcategory]);
+  }, [subcategories, activeSubcategory]);
 
   const handlePublishToggle = async () => {
     if (!restaurant) return;
@@ -154,8 +155,8 @@ const Editor = () => {
   }
 
   const activeCategoryData = categories.find(c => c.id === activeCategory);
-  const subsForActiveCategory = subcategories.filter(s => s.category_id === activeCategory);
-  const dishesForActiveSubcategory = dishes.filter(d => d.subcategory_id === activeSubcategory);
+  const subsForActiveCategory = subcategories;
+  const dishesForActiveSubcategory = dishes;
 
   return (
     <div className="min-h-screen bg-background">

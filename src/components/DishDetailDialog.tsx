@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import React from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { X, Flame, Wheat, Milk, Egg, Fish, Shell, Nut, Sprout, Beef, Bird, Salad, ChevronDown } from "lucide-react";
@@ -48,9 +49,16 @@ export const DishDetailDialog = ({ dish, open, onOpenChange }: DishDetailDialogP
 
   const { data: options = [] } = useDishOptions(dish.id);
   const { data: modifiers = [] } = useDishModifiers(dish.id);
-  const [selectedOption, setSelectedOption] = useState(options[0]?.id || "");
+  const [selectedOption, setSelectedOption] = useState("");
   const [selectedModifiers, setSelectedModifiers] = useState<string[]>([]);
   const [showOptions, setShowOptions] = useState(false);
+
+  // Sync selectedOption when options load
+  React.useEffect(() => {
+    if (options.length > 0 && !selectedOption) {
+      setSelectedOption(options[0].id);
+    }
+  }, [options, selectedOption]);
 
   const calculateTotalPrice = () => {
     let total = 0;

@@ -30,15 +30,38 @@ export const CreateRestaurantModal = ({ open, onOpenChange }: CreateRestaurantMo
   const [loading, setLoading] = useState(false);
 
   const generateSlug = (name: string) => {
-    return name
+    // Normalize Unicode characters (handles accents, etc.)
+    const normalized = name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, ""); // Remove diacritics
+    
+    return normalized
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "") // Remove invalid chars
+      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .replace(/-+/g, "-") // Replace multiple hyphens with single
+      .replace(/^-+|-+$/g, "") // Remove leading/trailing hyphens
+      .slice(0, 60); // Limit length
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file size (10MB max)
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      if (file.size > maxSize) {
+        toast.error("Image must be smaller than 10MB");
+        return;
+      }
+
+      // Validate file type
+      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+      if (!validTypes.includes(file.type)) {
+        toast.error("Please upload a valid image file (JPEG, PNG, WebP, or GIF)");
+        return;
+      }
+
       setSelectedFile(file);
       setShowCropModal(true);
     }
@@ -72,6 +95,12 @@ export const CreateRestaurantModal = ({ open, onOpenChange }: CreateRestaurantMo
     try {
       const slug = generateSlug(name);
       
+      if (!slug) {
+        toast.error("Restaurant name must contain at least one letter or number");
+        setLoading(false);
+        return;
+      }
+
       const newRestaurant = await createRestaurant.mutateAsync({
         owner_id: user.id,
         name: name.trim(),
@@ -82,10 +111,22 @@ export const CreateRestaurantModal = ({ open, onOpenChange }: CreateRestaurantMo
       });
 
       toast.success("Restaurant created!");
+      
+      // Clear form on success
+      setName("");
+      setTagline("");
+      setHeroImageUrl(null);
+      setSelectedFile(null);
+      
       onOpenChange(false);
       navigate(`/editor/${newRestaurant.id}`);
     } catch (error: any) {
-      toast.error(error.message || "Failed to create restaurant");
+      // Handle slug collision
+      if (error.message?.includes("duplicate") || error.message?.includes("unique")) {
+        toast.error("A restaurant with this name already exists. Please choose a different name.");
+      } else {
+        toast.error(error.message || "Failed to create restaurant");
+      }
     } finally {
       setLoading(false);
     }

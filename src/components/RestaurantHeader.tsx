@@ -30,6 +30,20 @@ const RestaurantHeader = memo(({
   const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file size (10MB max)
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      if (file.size > maxSize) {
+        toast.error("Image must be smaller than 10MB");
+        return;
+      }
+
+      // Validate file type
+      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+      if (!validTypes.includes(file.type)) {
+        toast.error("Please upload a valid image file (JPEG, PNG, WebP, or GIF)");
+        return;
+      }
+
       setSelectedImage(file);
       setShowCropModal(true);
     }

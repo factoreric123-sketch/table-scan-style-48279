@@ -50,8 +50,27 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="text-sm text-muted-foreground">Loading your restaurants...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!restaurants && !isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4 max-w-md text-center p-4">
+          <p className="text-lg font-medium text-foreground">Unable to load restaurants</p>
+          <p className="text-sm text-muted-foreground">
+            We're experiencing connection issues. Please try again in a moment.
+          </p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Refresh Page
+          </Button>
+        </div>
       </div>
     );
   }

@@ -26,6 +26,11 @@ const Auth = () => {
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('signup') === 'true') setIsLogin(false);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -53,9 +58,12 @@ const Auth = () => {
           navigate("/dashboard");
         }
       }
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
+    } catch (err: unknown) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+      } else {
+        const message = (err as any)?.message || "Can't reach the backend. Please try again in a moment.";
+        toast.error(message.includes('Failed to fetch') ? "Can't reach the backend right now. Please check your connection and try again." : message);
       }
     } finally {
       setLoading(false);

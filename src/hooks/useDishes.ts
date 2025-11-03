@@ -70,18 +70,33 @@ export const useCreateDish = () => {
 
   return useMutation({
     mutationFn: async (dish: Partial<Dish>) => {
+      // Ensure subcategory_id is set
+      if (!dish.subcategory_id) {
+        throw new Error("Subcategory ID is required");
+      }
+
       const { data, error } = await supabase
         .from("dishes")
         .insert([dish as any])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating dish:", error);
+        if (error.code === "42501") {
+          throw new Error("Permission denied. Please make sure you're logged in and have access to this restaurant.");
+        }
+        throw error;
+      }
       return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["dishes", data.subcategory_id] });
       queryClient.invalidateQueries({ queryKey: ["dishes", "restaurant"] });
+      toast.success("Dish created");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to create dish");
     },
   });
 };

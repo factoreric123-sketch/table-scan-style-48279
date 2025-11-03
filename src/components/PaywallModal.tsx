@@ -52,11 +52,9 @@ export const PaywallModal = ({ open, onOpenChange, feature }: PaywallModalProps)
   };
 
   const benefits = [
-    "Unlimited QR code generation & downloads",
-    "Publish menus publicly",
-    "Get shareable links",
-    "Priority email support",
-    "Advanced themes (coming soon)",
+    "Generate and download your menu QR code",
+    "Publish menus publicly and live",
+    "Get shareable link",
   ];
 
   return (
@@ -79,7 +77,7 @@ export const PaywallModal = ({ open, onOpenChange, feature }: PaywallModalProps)
             <div className="text-4xl font-bold">$10</div>
             <div className="text-sm text-muted-foreground">per month • Cancel anytime</div>
             <div className="mt-2 inline-block rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
-              7-day free trial
+              14-day free trial
             </div>
           </div>
 
@@ -109,13 +107,13 @@ export const PaywallModal = ({ open, onOpenChange, feature }: PaywallModalProps)
             ) : (
               <>
                 <Crown className="mr-2 h-4 w-4" />
-                Start 7-Day Free Trial
+                Start 14-Day Free Trial
               </>
             )}
           </Button>
 
           <p className="text-center text-xs text-muted-foreground">
-            No credit card required for trial. Cancel anytime.
+            Credit card required. Cancel anytime.
           </p>
         </div>
       </DialogContent>

@@ -107,7 +107,18 @@ export const useUpdateCategoriesOrder = () => {
         updates: categories
       });
 
-      if (error) throw error;
+      if (error) {
+        const results = await Promise.all(
+          categories.map((u) =>
+            supabase
+              .from('categories')
+              .update({ order_index: u.order_index })
+              .eq('id', u.id)
+          )
+        );
+        const firstError = results.find((r: any) => r.error)?.error;
+        if (firstError) throw firstError;
+      }
     },
     onMutate: async ({ categories, restaurantId }) => {
       // Cancel outgoing refetches

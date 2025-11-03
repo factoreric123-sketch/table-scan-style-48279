@@ -65,7 +65,7 @@ const PublicMenu = () => {
 
       if (error) {
         console.error('Error checking premium status:', error);
-        return false;
+        return true; // Do not block public menu on temporary errors
       }
 
       return data;

@@ -50,10 +50,58 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    /* iOS-style smooth scrolling */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   html {
+    /* Native smooth scrolling */
     scroll-behavior: smooth;
+    /* iOS momentum scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Hide scrollbar but keep functionality (iOS-style) */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* iOS-style tap highlight */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Prevent text selection on interactive elements */
+  button, a {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Smooth transitions on all interactive elements */
+  button, a, [role="button"] {
+    transition: transform 0.15s cubic-bezier(0.4, 0.0, 0.2, 1),
+                opacity 0.15s cubic-bezier(0.4, 0.0, 0.2, 1),
+                background-color 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+    will-change: transform;
+  }
+
+  /* Active state for all interactive elements (iOS-style) */
+  button:active, a:active, [role="button"]:active {
+    transform: scale(0.97);
+  }
+
+  /* iOS-style focus ring */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 0.375rem;
   }
 
   /* Fade in up animation */
@@ -69,7 +117,7 @@ All colors MUST be HSL.
   }
 
   .animate-fade-in-up {
-    animation: fade-in-up 0.6s ease-out forwards;
+    animation: fade-in-up 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
   }
 
   .animation-delay-200 {
@@ -88,5 +136,106 @@ All colors MUST be HSL.
 
   .animate-gradient-shift {
     animation: gradient-shift 6s ease-in-out infinite;
+  }
+
+  /* Skeleton loading animation (iOS-style pulse) */
+  @keyframes skeleton-pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .animate-skeleton-pulse {
+    animation: skeleton-pulse 1.5s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+  }
+
+  /* Shimmer effect for loading states */
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(
+      to right,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted) / 0.5) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 1000px 100%;
+  }
+
+  /* Spin animation for loading indicators */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Bounce animation for micro-interactions */
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  .animate-bounce {
+    animation: bounce 0.5s ease-in-out;
+  }
+
+  /* Scale in animation (iOS-style) */
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.2s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+  }
+
+  /* Glass morphism effect (iOS-style) */
+  .glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  /* Blur-up effect for images */
+  .blur-up {
+    filter: blur(10px);
+    transition: filter 0.3s ease-out;
+  }
+
+  .blur-up.loaded {
+    filter: blur(0);
+  }
+
+  /* Smooth color transitions */
+  * {
+    transition-property: color, background-color, border-color;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.4, 0.0, 0.2, 1);
   }
 }

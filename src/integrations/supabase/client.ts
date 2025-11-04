@@ -16,9 +16,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     detectSessionInUrl: true,
   },
   global: {
-    headers: {
-      'x-client-info': 'taptab-app',
-    },
+      headers: {
+        'x-client-info': 'menutap-app',
+      },
   },
   db: {
     schema: 'public',

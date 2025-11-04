@@ -14,6 +14,7 @@ interface EditableCategoriesProps {
   onCategoryChange: (categoryId: string) => void;
   restaurantId: string;
   previewMode: boolean;
+  filterSheetTrigger?: React.ReactNode;
 }
 
 export const EditableCategories = ({
@@ -22,6 +23,7 @@ export const EditableCategories = ({
   onCategoryChange,
   restaurantId,
   previewMode,
+  filterSheetTrigger,
 }: EditableCategoriesProps) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const createCategory = useCreateCategory();
@@ -80,23 +82,26 @@ export const EditableCategories = ({
 
   if (previewMode) {
     return (
-      <nav className="flex gap-3 overflow-x-auto pb-3 pt-4 px-4 scrollbar-hide">
-        {categories.map((category) => (
-          <Button
-            key={category.id}
-            onClick={() => onCategoryChange(category.id)}
-            variant={activeCategory === category.id ? "default" : "ghost"}
-            className={`
-              px-5 py-2 rounded-full whitespace-nowrap font-semibold text-sm transition-all
-              ${activeCategory === category.id 
-                ? 'bg-primary text-primary-foreground shadow-md' 
-                : 'text-foreground hover:bg-muted'
-              }
-            `}
-          >
-            {category.name}
-          </Button>
-        ))}
+      <nav className="flex gap-3 justify-between items-center overflow-x-auto pb-3 pt-4 px-4 scrollbar-hide">
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+          {categories.map((category) => (
+            <Button
+              key={category.id}
+              onClick={() => onCategoryChange(category.id)}
+              variant={activeCategory === category.id ? "default" : "ghost"}
+              className={`
+                px-5 py-2 rounded-full whitespace-nowrap font-semibold text-sm transition-all
+                ${activeCategory === category.id 
+                  ? 'bg-primary text-primary-foreground shadow-md' 
+                  : 'text-foreground hover:bg-muted'
+                }
+              `}
+            >
+              {category.name}
+            </Button>
+          ))}
+        </div>
+        {filterSheetTrigger && <div className="shrink-0 ml-3">{filterSheetTrigger}</div>}
       </nav>
     );
   }
@@ -111,26 +116,29 @@ export const EditableCategories = ({
         modifiers={[restrictToHorizontalAxis]}
       >
         <SortableContext items={categories.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-          <div className="flex gap-8 overflow-x-auto pb-3 scrollbar-hide">
-            {categories.map((category) => (
-              <SortableCategory
-                key={category.id}
-                category={category}
-                isActive={activeCategory === category.id}
-                onCategoryChange={onCategoryChange}
-                restaurantId={restaurantId}
-              />
-            ))}
-            <Button
-              onClick={handleAddCategory}
-              variant="outline"
-              size="sm"
-              className="rounded-full whitespace-nowrap gap-2 shrink-0"
-              disabled={createCategory.isPending}
-            >
-              <Plus className="h-4 w-4" />
-              {createCategory.isPending ? "Adding..." : "Add Category"}
-            </Button>
+          <div className="flex gap-8 justify-between items-center overflow-x-auto pb-3 scrollbar-hide">
+            <div className="flex gap-8 overflow-x-auto scrollbar-hide">
+              {categories.map((category) => (
+                <SortableCategory
+                  key={category.id}
+                  category={category}
+                  isActive={activeCategory === category.id}
+                  onCategoryChange={onCategoryChange}
+                  restaurantId={restaurantId}
+                />
+              ))}
+              <Button
+                onClick={handleAddCategory}
+                variant="outline"
+                size="sm"
+                className="rounded-full whitespace-nowrap gap-2 shrink-0"
+                disabled={createCategory.isPending}
+              >
+                <Plus className="h-4 w-4" />
+                {createCategory.isPending ? "Adding..." : "Add Category"}
+              </Button>
+            </div>
+            {filterSheetTrigger && <div className="shrink-0 ml-3">{filterSheetTrigger}</div>}
           </div>
         </SortableContext>
         

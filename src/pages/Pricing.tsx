@@ -7,7 +7,7 @@ const Pricing = () => {
     {
       title: "Free",
       price: "$0",
-      description: "Perfect for trying out TAPTAB",
+      description: "Perfect for trying out MenuTap",
       features: [
         "Unlimited restaurants",
         "Unlimited dishes & categories",

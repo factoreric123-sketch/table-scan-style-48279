@@ -101,8 +101,8 @@ export const EditableCategories = ({
 
   if (previewMode) {
     return (
-      <nav className="flex gap-3 justify-between items-center overflow-x-auto pb-3 pt-4 px-4 scrollbar-hide">
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+      <nav className="flex gap-3 justify-between items-center overflow-x-auto pb-3 pt-4 px-4">
+        <div className="flex gap-3 overflow-x-auto">
           {categories.map((category) => (
             <Button
               key={category.id}
@@ -139,8 +139,8 @@ export const EditableCategories = ({
         modifiers={[restrictToHorizontalAxis]}
       >
         <SortableContext items={categories.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-          <div className="flex gap-8 justify-between items-center overflow-x-auto pb-3 scrollbar-hide">
-            <div className="flex gap-8 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-8 justify-between items-center overflow-x-auto pb-3">
+            <div className="flex gap-8 overflow-x-auto">
               {categories.map((category) => (
                 <SortableCategory
                   key={category.id}

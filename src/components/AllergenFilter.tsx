@@ -84,7 +84,7 @@ export const AllergenFilter = memo(({
       .filter((o): o is typeof BADGE_OPTIONS[number] => o !== undefined);
   }, [badgeOrder]);
 
-  const [allergensOpen, setAllergensOpen] = useState(false);
+  const [allergensOpen, setAllergensOpen] = useState(true);
 
   return (
     <div className="space-y-6">

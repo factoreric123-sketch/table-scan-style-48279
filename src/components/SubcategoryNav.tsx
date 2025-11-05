@@ -8,7 +8,7 @@ interface SubcategoryNavProps {
 
 const SubcategoryNav = memo(({ subcategories, activeSubcategory, onSubcategoryChange }: SubcategoryNavProps) => {
   return (
-    <nav className="flex gap-8 overflow-x-auto px-4 pb-3 scrollbar-hide">
+    <nav className="flex gap-8 overflow-x-auto px-4 pb-3">
       {subcategories.map((subcategory) => (
         <button
           key={subcategory}

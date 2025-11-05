@@ -168,10 +168,11 @@ export const EditableCell = (props: EditableCellProps) => {
     const values = props.value;
 
     const handleToggle = (key: string) => {
-      props.onSave({
+      const newValues = {
         ...values,
         [key]: !values[key],
-      });
+      };
+      props.onSave(newValues);
     };
 
     return (
@@ -183,10 +184,13 @@ export const EditableCell = (props: EditableCellProps) => {
               key={key}
               variant={active ? "default" : "outline"}
               className={cn(
-                "gap-1 px-2 py-0.5 text-xs h-6 cursor-pointer transition-all active:scale-95",
+                "gap-1 px-2 py-0.5 text-xs h-6 cursor-pointer transition-all active:scale-95 select-none",
                 active ? "hover:opacity-90" : "hover:bg-muted"
               )}
-              onClick={() => handleToggle(key)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggle(key);
+              }}
             >
               {Icon && <Icon className="h-3 w-3" />}
               {capitalize(key)}

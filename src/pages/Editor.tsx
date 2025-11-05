@@ -58,12 +58,12 @@ const Editor = () => {
         .from('dishes')
         .select('*, subcategories!inner(id, name, category_id)')
         .eq('subcategories.category_id', activeCategory)
-        .order('display_order');
+        .order('order_index');
       
       if (error) throw error;
       return data || [];
     },
-    enabled: !!activeCategory && previewMode,
+    enabled: !!activeCategory,
   });
 
   // Group dishes by subcategory for preview mode

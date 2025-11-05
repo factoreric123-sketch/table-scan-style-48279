@@ -12,13 +12,20 @@ const Index = () => {
 
   const currentSubcategories = subcategories[activeCategory as keyof typeof subcategories] || [];
 
-  // Scroll to subcategory when clicked
+  // Scroll to subcategory when clicked with offset for sticky header
   const handleSubcategoryClick = (subcategory: string) => {
     setActiveSubcategory(subcategory);
-    subcategoryRefs.current[subcategory]?.scrollIntoView({ 
-      behavior: 'smooth',
-      block: 'start'
-    });
+    const element = subcategoryRefs.current[subcategory];
+    if (element) {
+      const headerOffset = 180; // Height of sticky navigation (adjust as needed)
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
   };
 
   // Update active subcategory based on scroll position

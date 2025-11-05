@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Bookmark, Share2, Menu as MenuIcon, Crown, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,15 +28,13 @@ const PublicMenu = () => {
   const [selectedSpicy, setSelectedSpicy] = useState<boolean | null>(null);
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const subcategoryRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // Apply restaurant theme to public menu
   useThemePreview(restaurant?.theme as any, !!restaurant);
 
   const activeCategoryObj = categories?.find((c) => c.id === activeCategory);
   const { data: subcategories } = useSubcategories(activeCategoryObj?.id || "");
-  
-  const activeSubcategoryObj = subcategories?.find((s) => s.id === activeSubcategory);
-  const { data: dishes } = useDishes(activeSubcategoryObj?.id || "");
 
   // Set initial active category and subcategory
   useEffect(() => {
@@ -46,9 +44,51 @@ const PublicMenu = () => {
   }, [categories, activeCategory]);
 
   useEffect(() => {
-    if (subcategories && subcategories.length > 0) {
+    if (subcategories && subcategories.length > 0 && !activeSubcategory) {
       setActiveSubcategory(subcategories[0].id);
     }
+  }, [subcategories]);
+
+  // Scroll to subcategory when clicked with offset for sticky header
+  const handleSubcategoryClick = useCallback((subcategoryId: string) => {
+    setActiveSubcategory(subcategoryId);
+    const subcategoryName = subcategories?.find(s => s.id === subcategoryId)?.name;
+    if (subcategoryName) {
+      const element = subcategoryRefs.current[subcategoryName];
+      if (element) {
+        const headerOffset = 180; // Height of sticky navigation
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    }
+  }, [subcategories]);
+
+  // Update active subcategory based on scroll position
+  useEffect(() => {
+    if (!subcategories || subcategories.length === 0) return;
+
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 250;
+      
+      for (const subcategory of subcategories) {
+        const element = subcategoryRefs.current[subcategory.name];
+        if (element) {
+          const { offsetTop, offsetHeight } = element;
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setActiveSubcategory(subcategory.id);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [subcategories]);
 
   // No loading spinner - show skeleton instead
@@ -134,43 +174,56 @@ const PublicMenu = () => {
   const categoryNames = categories?.map((c) => c.name) || [];
   const activeCategoryName = categories?.find((c) => c.id === activeCategory)?.name || "";
 
-  // Optimized dish transformation function - extract to avoid duplication  
-  const transformDish = useCallback((d: NonNullable<typeof dishes>[number], category: string, subcategory: string) => ({
-    id: d.id,
-    name: d.name,
-    description: d.description || "",
-    price: d.price,
-    image: d.image_url || "",
-    isNew: d.is_new,
-    isSpecial: d.is_special,
-    isPopular: d.is_popular,
-    isChefRecommendation: d.is_chef_recommendation,
-    category,
-    subcategory,
-    allergens: d.allergens,
-    calories: d.calories,
-    isVegetarian: d.is_vegetarian,
-    isVegan: d.is_vegan,
-    isSpicy: d.is_spicy,
-  }), []);
+  // Get all dishes for all subcategories in the active category
+  const { data: allDishesForCategory } = useQuery({
+    queryKey: ['all-dishes-for-category', activeCategoryObj?.id],
+    queryFn: async () => {
+      if (!activeCategoryObj?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('dishes')
+        .select('*, subcategories!inner(id, name, category_id)')
+        .eq('subcategories.category_id', activeCategoryObj.id)
+        .order('display_order');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!activeCategoryObj?.id,
+  });
+
+  // Group dishes by subcategory
+  const dishesBySubcategory = useMemo(() => {
+    if (!allDishesForCategory || !subcategories) return {};
+    
+    const grouped: Record<string, any[]> = {};
+    
+    subcategories.forEach(sub => {
+      grouped[sub.name] = allDishesForCategory.filter(
+        dish => (dish as any).subcategories.id === sub.id
+      );
+    });
+    
+    return grouped;
+  }, [allDishesForCategory, subcategories]);
 
   // Filter dishes based on selected allergens and dietary preferences
-  const filteredDishes = useMemo(() => {
+  const getFilteredDishes = useCallback((dishes: any[]) => {
     if (!dishes || dishes.length === 0) return [];
 
     // Fast path: No filters applied
     if (selectedAllergens.length === 0 && selectedDietary.length === 0 && selectedSpicy === null && selectedBadges.length === 0) {
-      return dishes.map((d) => transformDish(d, activeCategoryName, activeSubcategoryObj?.name || ""));
+      return dishes;
     }
 
     // Apply filters
     const isVeganSelected = selectedDietary.includes("vegan");
     const isVegetarianSelected = selectedDietary.includes("vegetarian");
     
-    const filtered = dishes.filter((dish) => {
+    return dishes.filter((dish) => {
       // Filter allergens
       if (selectedAllergens.length > 0 && dish.allergens && dish.allergens.length > 0) {
-        if (dish.allergens.some((allergen) => selectedAllergens.includes(allergen.toLowerCase()))) {
+        if (dish.allergens.some((allergen: string) => selectedAllergens.includes(allergen.toLowerCase()))) {
           return false;
         }
       }
@@ -196,9 +249,7 @@ const PublicMenu = () => {
       
       return true;
     });
-
-    return filtered.map((d) => transformDish(d, activeCategoryName, activeSubcategoryObj?.name || ""));
-  }, [dishes, selectedAllergens, selectedDietary, selectedSpicy, selectedBadges, activeCategoryName, activeSubcategoryObj, transformDish]);
+  }, [selectedAllergens, selectedDietary, selectedSpicy, selectedBadges]);
 
   // Memoize handlers to prevent re-renders
   const handleAllergenToggle = useCallback((allergen: string) => {
@@ -309,22 +360,54 @@ const PublicMenu = () => {
         {subcategories && subcategories.length > 0 && (
           <SubcategoryNav
             subcategories={subcategories.map((s) => s.name)}
-            activeSubcategory={activeSubcategoryObj?.name || ""}
+            activeSubcategory={subcategories.find(s => s.id === activeSubcategory)?.name || ""}
             onSubcategoryChange={(name) => {
               const sub = subcategories.find((s) => s.name === name);
-              if (sub) setActiveSubcategory(sub.id);
+              if (sub) handleSubcategoryClick(sub.id);
             }}
           />
         )}
       </div>
 
 
-      {/* Main Content */}
+      {/* Main Content - All Subcategories in One Page */}
       <main>
-        <MenuGrid 
-          dishes={filteredDishes}
-          sectionTitle={activeSubcategoryObj?.name || ""}
-        />
+        {subcategories?.map((subcategory) => {
+          const subcategoryDishes = dishesBySubcategory[subcategory.name] || [];
+          const filteredSubcategoryDishes = getFilteredDishes(subcategoryDishes);
+          
+          // Transform dishes to the format expected by MenuGrid
+          const transformedDishes = filteredSubcategoryDishes.map((d) => ({
+            id: d.id,
+            name: d.name,
+            description: d.description || "",
+            price: d.price,
+            image: d.image_url || "",
+            isNew: d.is_new,
+            isSpecial: d.is_special,
+            isPopular: d.is_popular,
+            isChefRecommendation: d.is_chef_recommendation,
+            category: activeCategoryName,
+            subcategory: subcategory.name,
+            allergens: d.allergens,
+            calories: d.calories,
+            isVegetarian: d.is_vegetarian,
+            isVegan: d.is_vegan,
+            isSpicy: d.is_spicy,
+          }));
+          
+          return (
+            <div 
+              key={subcategory.id}
+              ref={(el) => subcategoryRefs.current[subcategory.name] = el}
+            >
+              <MenuGrid 
+                dishes={transformedDishes}
+                sectionTitle={subcategory.name}
+              />
+            </div>
+          );
+        })}
       </main>
 
       {/* Footer */}

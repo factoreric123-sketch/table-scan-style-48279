@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useRestaurantById, useUpdateRestaurant } from "@/hooks/useRestaurants";
@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { useThemeHistory } from "@/hooks/useThemeHistory";
 import { getDefaultTheme } from "@/lib/presetThemes";
 import { Theme } from "@/lib/types/theme";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Editor = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
@@ -32,12 +34,52 @@ const Editor = () => {
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
   const [selectedSpicy, setSelectedSpicy] = useState<boolean | null>(null);
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
+  const subcategoryRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const { data: restaurant, isLoading: restaurantLoading } = useRestaurantById(restaurantId || "");
   const { data: categories = [], isLoading: categoriesLoading } = useCategories(restaurantId || "");
   const { data: subcategories = [], isLoading: subcategoriesLoading } = useSubcategories(activeCategory);
   const { data: dishes = [], isLoading: dishesLoading } = useDishes(activeSubcategory);
   const updateRestaurant = useUpdateRestaurant();
+
+  // Get current category's subcategories for preview mode
+  const currentSubcategories = useMemo(() => 
+    subcategories.filter(s => s.category_id === activeCategory),
+    [subcategories, activeCategory]
+  );
+
+  // Get all dishes for all subcategories in preview mode
+  const { data: allDishesForCategory } = useQuery({
+    queryKey: ['all-dishes-for-category', activeCategory],
+    queryFn: async () => {
+      if (!activeCategory) return [];
+      
+      const { data, error } = await supabase
+        .from('dishes')
+        .select('*, subcategories!inner(id, name, category_id)')
+        .eq('subcategories.category_id', activeCategory)
+        .order('display_order');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!activeCategory && previewMode,
+  });
+
+  // Group dishes by subcategory for preview mode
+  const dishesBySubcategory = useMemo(() => {
+    if (!previewMode || !allDishesForCategory || !currentSubcategories) return {};
+    
+    const grouped: Record<string, any[]> = {};
+    
+    currentSubcategories.forEach(sub => {
+      grouped[sub.id] = allDishesForCategory.filter(
+        dish => (dish as any).subcategories.id === sub.id
+      );
+    });
+    
+    return grouped;
+  }, [allDishesForCategory, currentSubcategories, previewMode]);
 
   // Theme history for undo/redo
   const { canUndo, canRedo, undo, redo, push, reset } = useThemeHistory(
@@ -107,12 +149,56 @@ const Editor = () => {
     if (!activeCategory) return;
     
     const subsForActiveCategory = subcategories.filter(s => s.category_id === activeCategory);
-    if (subsForActiveCategory.length > 0) {
+    if (subsForActiveCategory.length > 0 && !activeSubcategory) {
       setActiveSubcategory(subsForActiveCategory[0].id);
-    } else {
+    } else if (subsForActiveCategory.length === 0) {
       setActiveSubcategory("");
     }
   }, [subcategories, activeCategory]);
+
+  // Scroll to subcategory when clicked with offset for sticky header (preview mode only)
+  const handleSubcategoryClick = useCallback((subcategoryId: string) => {
+    setActiveSubcategory(subcategoryId);
+    if (previewMode) {
+      const subcategoryName = currentSubcategories.find(s => s.id === subcategoryId)?.name;
+      if (subcategoryName) {
+        const element = subcategoryRefs.current[subcategoryName];
+        if (element) {
+          const headerOffset = 180; // Height of sticky navigation
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+      }
+    }
+  }, [previewMode, currentSubcategories]);
+
+  // Update active subcategory based on scroll position (preview mode only)
+  useEffect(() => {
+    if (!previewMode || currentSubcategories.length === 0) return;
+
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 250;
+      
+      for (const subcategory of currentSubcategories) {
+        const element = subcategoryRefs.current[subcategory.name];
+        if (element) {
+          const { offsetTop, offsetHeight } = element;
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setActiveSubcategory(subcategory.id);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [previewMode, currentSubcategories]);
 
   const handlePublishToggle = async () => {
     if (!restaurant) return;
@@ -185,20 +271,20 @@ const Editor = () => {
     setSelectedBadges([]);
   }, []);
 
-  // Filter dishes in preview mode
-  const filteredDishes = useMemo(() => {
-    if (!previewMode || !dishes || dishes.length === 0) return dishes;
+  // Filter dishes helper function
+  const getFilteredDishes = useCallback((dishesToFilter: any[]) => {
+    if (!previewMode || !dishesToFilter || dishesToFilter.length === 0) return dishesToFilter;
 
     if (selectedAllergens.length === 0 && selectedDietary.length === 0 && selectedSpicy === null && selectedBadges.length === 0) {
-      return dishes;
+      return dishesToFilter;
     }
 
     const isVeganSelected = selectedDietary.includes("vegan");
     const isVegetarianSelected = selectedDietary.includes("vegetarian");
     
-    return dishes.filter((dish) => {
+    return dishesToFilter.filter((dish) => {
       if (selectedAllergens.length > 0 && dish.allergens && dish.allergens.length > 0) {
-        if (dish.allergens.some((allergen) => selectedAllergens.includes(allergen.toLowerCase()))) {
+        if (dish.allergens.some((allergen: string) => selectedAllergens.includes(allergen.toLowerCase()))) {
           return false;
         }
       }
@@ -221,7 +307,10 @@ const Editor = () => {
       
       return true;
     });
-  }, [dishes, previewMode, selectedAllergens, selectedDietary, selectedSpicy, selectedBadges]);
+  }, [previewMode, selectedAllergens, selectedDietary, selectedSpicy, selectedBadges]);
+
+  // Filtered dishes for edit mode
+  const filteredDishes = useMemo(() => getFilteredDishes(dishes), [dishes, getFilteredDishes]);
 
   // Sync view mode with restaurant preference
   useEffect(() => {
@@ -350,12 +439,32 @@ const Editor = () => {
         <EditableSubcategories
           subcategories={subcategories}
           activeSubcategory={activeSubcategory}
-          onSubcategoryChange={setActiveSubcategory}
+          onSubcategoryChange={handleSubcategoryClick}
           categoryId={activeCategory}
           previewMode={previewMode}
         />
 
-        {activeSubcategory && viewMode === 'grid' && (
+        {/* Preview Mode: Show all subcategories in one page */}
+        {previewMode && viewMode === 'grid' && currentSubcategories.map((subcategory) => {
+          const subcategoryDishes = dishesBySubcategory[subcategory.id] || [];
+          const filteredSubcategoryDishes = getFilteredDishes(subcategoryDishes);
+          
+          return (
+            <div 
+              key={subcategory.id}
+              ref={(el) => subcategoryRefs.current[subcategory.name] = el}
+            >
+              <EditableDishes
+                dishes={filteredSubcategoryDishes}
+                subcategoryId={subcategory.id}
+                previewMode={previewMode}
+              />
+            </div>
+          );
+        })}
+
+        {/* Edit Mode: Show only active subcategory */}
+        {!previewMode && activeSubcategory && viewMode === 'grid' && (
           <EditableDishes
             dishes={filteredDishes || dishes}
             subcategoryId={activeSubcategory}

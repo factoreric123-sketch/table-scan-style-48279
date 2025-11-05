@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import CategoryNav from "@/components/CategoryNav";
 import SubcategoryNav from "@/components/SubcategoryNav";
 import MenuGrid from "@/components/MenuGrid";
@@ -7,15 +7,42 @@ import { menuData, categories, subcategories } from "@/data/menuData";
 
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState("Dinner");
-  const [activeSubcategory, setActiveSubcategory] = useState("HOT APPETIZERS");
-
-  const filteredDishes = menuData.filter(
-    (dish) => dish.category === activeCategory && dish.subcategory === activeSubcategory
-  );
+  const [activeSubcategory, setActiveSubcategory] = useState("SIDES");
+  const subcategoryRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const currentSubcategories = subcategories[activeCategory as keyof typeof subcategories] || [];
 
-  // Update subcategory when category changes
+  // Scroll to subcategory when clicked
+  const handleSubcategoryClick = (subcategory: string) => {
+    setActiveSubcategory(subcategory);
+    subcategoryRefs.current[subcategory]?.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    });
+  };
+
+  // Update active subcategory based on scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 200; // Offset for sticky header
+      
+      for (const subcategory of currentSubcategories) {
+        const element = subcategoryRefs.current[subcategory];
+        if (element) {
+          const { offsetTop, offsetHeight } = element;
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setActiveSubcategory(subcategory);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [currentSubcategories]);
+
+  // Reset to first subcategory when category changes
   useEffect(() => {
     const newSubcategories = subcategories[activeCategory as keyof typeof subcategories] || [];
     if (newSubcategories.length > 0) {
@@ -44,14 +71,27 @@ const Index = () => {
           <SubcategoryNav
             subcategories={currentSubcategories}
             activeSubcategory={activeSubcategory}
-            onSubcategoryChange={setActiveSubcategory}
+            onSubcategoryChange={handleSubcategoryClick}
           />
         )}
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - All Subcategories in One Page */}
       <main>
-        <MenuGrid dishes={filteredDishes} sectionTitle={activeSubcategory} />
+        {currentSubcategories.map((subcategory) => {
+          const subcategoryDishes = menuData.filter(
+            (dish) => dish.category === activeCategory && dish.subcategory === subcategory
+          );
+          
+          return (
+            <div 
+              key={subcategory}
+              ref={(el) => subcategoryRefs.current[subcategory] = el}
+            >
+              <MenuGrid dishes={subcategoryDishes} sectionTitle={subcategory} />
+            </div>
+          );
+        })}
       </main>
 
       {/* Footer */}

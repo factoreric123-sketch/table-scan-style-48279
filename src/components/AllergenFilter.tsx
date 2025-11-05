@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { X, Wheat, Milk, Egg, Fish, Shell, Nut, Sprout, Flame, Salad, Sparkles, Star, TrendingUp, ChefHat, ChevronDown } from "lucide-react";
+import { X, Wheat, Milk, Egg, Fish, Nut, Sprout, Flame, Salad, Sparkles, Star, TrendingUp, ChefHat, ChevronDown } from "lucide-react";
 import { useMemo, memo, useCallback, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -8,7 +8,7 @@ export const ALLERGEN_OPTIONS = [
   { value: "dairy", label: "Dairy-Free", Icon: Milk },
   { value: "eggs", label: "Egg-Free", Icon: Egg },
   { value: "fish", label: "Fish-Free", Icon: Fish },
-  { value: "shellfish", label: "Shellfish-Free", Icon: Shell },
+  { value: "shellfish", label: "Shellfish-Free", Icon: Fish },
   { value: "nuts", label: "Nut-Free", Icon: Nut },
   { value: "soy", label: "Soy-Free", Icon: Sprout },
 ] as const;
@@ -118,7 +118,7 @@ export const AllergenFilter = memo(({
                 )}
                 onClick={() => onDietaryToggle(option.value)}
               >
-                {isSelected && <Icon className="h-3.5 w-3.5" />}
+                <Icon className="h-3.5 w-3.5" />
                 {option.label}
               </Badge>
             );
@@ -138,7 +138,7 @@ export const AllergenFilter = memo(({
               else onSpicyToggle(null);
             }}
           >
-            {selectedSpicy !== null && <Flame className="h-3.5 w-3.5" />}
+            <Flame className="h-3.5 w-3.5" />
             {selectedSpicy === null ? "Spicy" : selectedSpicy ? "Spicy Only" : "Not Spicy"}
           </Badge>
         </div>
@@ -165,7 +165,7 @@ export const AllergenFilter = memo(({
                   className="cursor-pointer transition-all duration-200 hover:scale-105 px-3 py-2 gap-1.5 rounded-full"
                   onClick={() => onAllergenToggle(option.value)}
                 >
-                  {isSelected && <Icon className="h-3.5 w-3.5" />}
+                  <Icon className="h-3.5 w-3.5" />
                   {option.label}
                 </Badge>
               );
@@ -189,7 +189,7 @@ export const AllergenFilter = memo(({
                   className="cursor-pointer transition-all duration-200 hover:scale-105 px-3 py-2 gap-1.5 rounded-full"
                   onClick={() => onBadgeToggle(option.value)}
                 >
-                  {isSelected && <Icon className="h-3.5 w-3.5" />}
+                  <Icon className="h-3.5 w-3.5" />
                   {option.label}
                 </Badge>
               );

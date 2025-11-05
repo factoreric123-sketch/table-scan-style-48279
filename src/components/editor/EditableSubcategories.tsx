@@ -107,7 +107,7 @@ export const EditableSubcategories = ({
 
   if (previewMode) {
     return (
-      <nav className="flex gap-8 overflow-x-auto px-4 pb-3 scrollbar-hide">
+      <nav className="flex gap-8 overflow-x-auto px-4 pb-3">
         {subcategories.map((subcategory) => (
           <button
             key={subcategory.id}
@@ -138,7 +138,7 @@ export const EditableSubcategories = ({
         modifiers={[restrictToHorizontalAxis]}
       >
         <SortableContext items={subcategories.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
-          <div className="flex gap-12 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-12 overflow-x-auto">
             {subcategories.map((subcategory) => (
               <SortableSubcategory
                 key={subcategory.id}

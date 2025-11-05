@@ -415,7 +415,6 @@ const Editor = () => {
           
           <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
             <SheetHeader className="mb-6">
-              <SheetTitle>Filter Menu</SheetTitle>
             </SheetHeader>
             {previewMode && restaurant.show_allergen_filter !== false && (
               <AllergenFilter
@@ -472,7 +471,7 @@ const Editor = () => {
           />
         )}
 
-        {activeSubcategory && viewMode === 'table' && (
+        {activeSubcategory && viewMode === 'table' && !previewMode && (
           <SpreadsheetView
             dishes={dishes}
             categories={categories}

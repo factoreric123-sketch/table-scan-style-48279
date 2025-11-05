@@ -6,8 +6,8 @@ import RestaurantHeader from "@/components/RestaurantHeader";
 import { menuData, categories, subcategories } from "@/data/menuData";
 
 const Index = () => {
-  const [activeCategory, setActiveCategory] = useState("Cocktails");
-  const [activeSubcategory, setActiveSubcategory] = useState("MARTINIS");
+  const [activeCategory, setActiveCategory] = useState("Dinner");
+  const [activeSubcategory, setActiveSubcategory] = useState("HOT APPETIZERS");
 
   const filteredDishes = menuData.filter(
     (dish) => dish.category === activeCategory && dish.subcategory === activeSubcategory
@@ -27,8 +27,8 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Restaurant Hero */}
       <RestaurantHeader 
-        name="4 Charles"
-        tagline="Prime Steakhouse"
+        name="Victory Restaurant and Lounge"
+        tagline="Upscale Dining & Premium Cocktails"
         heroImageUrl={null}
       />
 

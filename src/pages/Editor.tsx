@@ -164,7 +164,7 @@ const Editor = () => {
       if (subcategoryName) {
         const element = subcategoryRefs.current[subcategoryName];
         if (element) {
-          const headerOffset = 180; // Height of sticky navigation
+          const headerOffset = 120; // Height of sticky navigation
           const elementPosition = element.getBoundingClientRect().top;
           const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
           

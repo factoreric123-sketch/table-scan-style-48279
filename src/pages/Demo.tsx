@@ -17,7 +17,7 @@ const Index = () => {
     setActiveSubcategory(subcategory);
     const element = subcategoryRefs.current[subcategory];
     if (element) {
-      const headerOffset = 180; // Height of sticky navigation (adjust as needed)
+      const headerOffset = 120; // Height of sticky navigation (adjust as needed)
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
       

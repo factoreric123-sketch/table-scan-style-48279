@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Eye, EyeOff, QrCode, Palette, Upload, Undo2, Redo2, LayoutGrid, Table2, Settings } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Eye, EyeOff, QrCode, Palette, Upload, Undo2, Redo2, LayoutGrid, Table2, Settings, Share2 } from "lucide-react";
 import { QRCodeModal } from "@/components/editor/QRCodeModal";
+import { ShareDialog } from "@/components/editor/ShareDialog";
 import { ThemeGalleryModal } from "@/components/editor/ThemeGalleryModal";
 import { PaywallModal } from "@/components/PaywallModal";
 import { RestaurantSettingsDialog } from "@/components/editor/RestaurantSettingsDialog";
@@ -41,6 +43,7 @@ export const EditorTopBar = ({
 }: EditorTopBarProps) => {
   const navigate = useNavigate();
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const [showThemeDialog, setShowThemeDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -59,8 +62,21 @@ export const EditorTopBar = ({
   const handlePublishClick = () => {
     if (hasPremium || restaurant.published) {
       onPublishToggle();
+      // Auto-open share dialog after publishing
+      if (!restaurant.published) {
+        setTimeout(() => setShowShareDialog(true), 500);
+      }
     } else {
       setPaywallFeature("Menu Publishing");
+      setShowPaywall(true);
+    }
+  };
+
+  const handleShareClick = () => {
+    if (hasPremium) {
+      setShowShareDialog(true);
+    } else {
+      setPaywallFeature("Menu Sharing");
       setShowPaywall(true);
     }
   };
@@ -80,11 +96,18 @@ export const EditorTopBar = ({
               Dashboard
             </Button>
             <div className="border-l border-border h-6" />
-            <div>
-              <h1 className="text-lg font-bold">{restaurant.name}</h1>
-              <p className="text-xs text-muted-foreground">
-                {viewMode === 'grid' ? 'Visual Editor' : 'Table Editor'}
-              </p>
+            <div className="flex items-center gap-2">
+              <div>
+                <h1 className="text-lg font-bold">{restaurant.name}</h1>
+                <p className="text-xs text-muted-foreground">
+                  {viewMode === 'grid' ? 'Visual Editor' : 'Table Editor'}
+                </p>
+              </div>
+              {!restaurant.published && (
+                <Badge variant="secondary" className="text-xs">
+                  Unpublished
+                </Badge>
+              )}
             </div>
           </div>
 
@@ -184,6 +207,16 @@ export const EditorTopBar = ({
                   <QrCode className="h-4 w-4" />
                   QR Code
                 </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShareClick}
+                  className="gap-2"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </Button>
               </>
             )}
 
@@ -192,6 +225,7 @@ export const EditorTopBar = ({
               size="sm"
               onClick={handlePublishClick}
               className="gap-2"
+              title={restaurant.published ? "Unpublish menu" : "Publish menu to make it live"}
             >
               <Upload className="h-4 w-4" />
               {restaurant.published ? "Unpublish" : "Publish"}
@@ -205,6 +239,15 @@ export const EditorTopBar = ({
         onOpenChange={setShowQRModal}
         restaurantSlug={restaurant.slug}
         restaurantName={restaurant.name}
+        isPublished={restaurant.published}
+      />
+
+      <ShareDialog
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        restaurantSlug={restaurant.slug}
+        restaurantName={restaurant.name}
+        isPublished={restaurant.published}
       />
 
       <ThemeGalleryModal

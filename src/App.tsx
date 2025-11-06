@@ -82,6 +82,9 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            {/* New canonical route for menus */}
+            <Route path="/menu/:slug" element={<PublicMenu />} />
+            {/* Backward compatibility for old QR codes */}
             <Route path="/:slug" element={<PublicMenu />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -117,14 +117,31 @@ const PublicMenu = () => {
     );
   }
 
-  // Show not found if restaurant doesn't exist or isn't published
-  if (!restaurant || !restaurant.published) {
+  // Show not found if restaurant doesn't exist
+  if (!restaurant) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <h1 className="text-3xl font-bold">Restaurant Not Found</h1>
           <p className="text-muted-foreground text-lg">
-            This menu doesn't exist or is not currently available.
+            This menu doesn't exist or has been removed.
+          </p>
+          <Button onClick={() => window.location.href = '/'} className="mt-4">
+            Return Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show unpublished message if not published
+  if (!restaurant.published) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-bold">Menu Not Available</h1>
+          <p className="text-muted-foreground text-lg">
+            This menu hasn't been published yet.
           </p>
           <Button onClick={() => window.location.href = '/'} className="mt-4">
             Return Home

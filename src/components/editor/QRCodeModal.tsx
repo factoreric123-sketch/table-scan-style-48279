@@ -2,14 +2,16 @@ import { useState } from "react";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Copy, ExternalLink, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface QRCodeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   restaurantSlug: string;
   restaurantName: string;
+  isPublished?: boolean;
 }
 
 export const QRCodeModal = ({
@@ -17,11 +19,36 @@ export const QRCodeModal = ({
   onOpenChange,
   restaurantSlug,
   restaurantName,
+  isPublished = true,
 }: QRCodeModalProps) => {
   const [size, setSize] = useState<number>(250);
-  const url = `${window.location.origin}/${restaurantSlug}`;
+  const [copied, setCopied] = useState(false);
+  
+  // Use canonical URL with /menu/ prefix
+  const baseUrl = import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin;
+  const url = `${baseUrl}/menu/${restaurantSlug}`;
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("Link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const handleOpenLive = () => {
+    window.open(url, "_blank");
+  };
 
   const handleDownloadPNG = () => {
+    if (!isPublished) {
+      toast.error("Publish your menu first to download QR code");
+      return;
+    }
+    
     const canvas = document.getElementById("qr-canvas") as HTMLCanvasElement;
     if (!canvas) return;
 
@@ -38,6 +65,11 @@ export const QRCodeModal = ({
   };
 
   const handleDownloadSVG = () => {
+    if (!isPublished) {
+      toast.error("Publish your menu first to download QR code");
+      return;
+    }
+
     const svg = document.getElementById("qr-svg") as unknown as SVGElement;
     if (!svg) return;
 
@@ -60,12 +92,50 @@ export const QRCodeModal = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          <div className="text-sm text-muted-foreground">
-            Scan this QR code to view your menu at:
-            <br />
-            <code className="text-xs bg-muted px-2 py-1 rounded mt-1 inline-block">
+          {!isPublished && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                This menu isn't published yet. Publish it first to make the QR code work for customers.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              Scan this QR code or share the link to view your menu:
+            </div>
+            <code className="text-xs bg-muted px-2 py-1 rounded block overflow-x-auto">
               {url}
             </code>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleCopyLink}
+                variant="outline"
+                size="sm"
+                className="flex-1 gap-2"
+              >
+                {copied ? (
+                  <>
+                    <CheckCheck className="h-4 w-4" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    Copy Link
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleOpenLive}
+                variant="outline"
+                size="sm"
+                className="flex-1 gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Open Live
+              </Button>
+            </div>
           </div>
 
           <div className="flex justify-center">
@@ -122,11 +192,21 @@ export const QRCodeModal = ({
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleDownloadPNG} variant="outline" className="flex-1 gap-2">
+              <Button 
+                onClick={handleDownloadPNG} 
+                variant="outline" 
+                className="flex-1 gap-2"
+                disabled={!isPublished}
+              >
                 <Download className="h-4 w-4" />
                 Download PNG
               </Button>
-              <Button onClick={handleDownloadSVG} variant="outline" className="flex-1 gap-2">
+              <Button 
+                onClick={handleDownloadSVG} 
+                variant="outline" 
+                className="flex-1 gap-2"
+                disabled={!isPublished}
+              >
                 <Download className="h-4 w-4" />
                 Download SVG
               </Button>

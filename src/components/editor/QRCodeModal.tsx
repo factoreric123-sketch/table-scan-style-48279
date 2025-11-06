@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, Copy, ExternalLink, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QRCodeModalProps {
   open: boolean;
@@ -28,10 +29,98 @@ export const QRCodeModal = ({
   const baseUrl = import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin;
   const directUrl = `${baseUrl}/menu/${restaurantSlug}`;
   
-  // Universal resolver for QR code (resilient)
+  // Universal resolver for QR code (resilient) - fallback
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-  const qrUrl = `https://${projectId}.supabase.co/functions/v1/resolve-menu?slug=${restaurantSlug}`;
+  const defaultResolverUrl = `https://${projectId}.supabase.co/functions/v1/resolve-menu?slug=${restaurantSlug}`;
+  const [qrUrl, setQrUrl] = useState<string>(defaultResolverUrl);
 
+  // Ensure a short link exists: /m/{restaurant_hash}/{menu_id}
+  useEffect(() => {
+    if (!open || !isPublished) {
+      setQrUrl(defaultResolverUrl);
+      return;
+    }
+
+    let cancelled = false;
+
+    const hex = (buffer: ArrayBuffer) =>
+      Array.from(new Uint8Array(buffer))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
+
+    const sha256Hex = async (input: string) => {
+      const enc = new TextEncoder().encode(input);
+      const digest = await crypto.subtle.digest("SHA-256", enc);
+      return hex(digest);
+    };
+
+    const ensureLink = async () => {
+      try {
+        // 1) Lookup restaurant by slug
+        const { data: restaurant, error: rErr } = await supabase
+          .from("restaurants")
+          .select("id, slug, published")
+          .eq("slug", restaurantSlug)
+          .maybeSingle();
+
+        if (rErr || !restaurant) {
+          console.warn("[QRCodeModal] restaurant not found", rErr);
+          setQrUrl(defaultResolverUrl);
+          return;
+        }
+        if (!restaurant.published) {
+          setQrUrl(defaultResolverUrl);
+          return;
+        }
+
+        // 2) Existing link?
+        const { data: existing, error: lErr } = await supabase
+          .from("menu_links")
+          .select("restaurant_hash, menu_id, active")
+          .eq("restaurant_id", restaurant.id)
+          .eq("active", true)
+          .maybeSingle();
+
+        if (!lErr && existing) {
+          const shortUrl = `${baseUrl}/m/${existing.restaurant_hash}/${existing.menu_id}`;
+          if (!cancelled) setQrUrl(shortUrl);
+          return;
+        }
+
+        // 3) Create deterministic IDs and upsert
+        const fullHex = await sha256Hex(restaurant.id);
+        const restaurant_hash = fullHex.slice(0, 8);
+        const numBase = parseInt(fullHex.slice(8, 16), 16);
+        const menu_num = (numBase % 100000).toString().padStart(5, "0");
+        const menu_id = menu_num;
+
+        const { data: upserted, error: uErr } = await supabase
+          .from("menu_links")
+          .upsert(
+            { restaurant_id: restaurant.id, restaurant_hash, menu_id, active: true },
+            { onConflict: "restaurant_id" }
+          )
+          .select("restaurant_hash, menu_id")
+          .maybeSingle();
+
+        if (uErr) {
+          console.warn("[QRCodeModal] upsert failed, falling back", uErr);
+          setQrUrl(defaultResolverUrl);
+          return;
+        }
+
+        const link = upserted || { restaurant_hash, menu_id };
+        const shortUrl = `${baseUrl}/m/${link.restaurant_hash}/${link.menu_id}`;
+        if (!cancelled) setQrUrl(shortUrl);
+      } catch (e) {
+        console.warn("[QRCodeModal] ensureLink error", e);
+        if (!cancelled) setQrUrl(defaultResolverUrl);
+      }
+    };
+
+    ensureLink();
+    return () => { cancelled = true; };
+  }, [open, isPublished, restaurantSlug, baseUrl, defaultResolverUrl]);
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(directUrl);

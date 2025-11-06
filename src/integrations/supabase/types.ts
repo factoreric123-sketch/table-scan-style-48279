@@ -187,6 +187,44 @@ export type Database = {
           },
         ]
       }
+      menu_links: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          menu_id: string
+          restaurant_hash: string
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          menu_id: string
+          restaurant_hash: string
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          menu_id?: string
+          restaurant_hash?: string
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_links_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: true
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurants: {
         Row: {
           allergen_filter_order: Json | null

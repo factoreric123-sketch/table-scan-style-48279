@@ -134,6 +134,7 @@ export const useCreateDish = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["dishes", data.subcategory_id] });
       queryClient.invalidateQueries({ queryKey: ["dishes", "restaurant"] });
+      queryClient.invalidateQueries({ queryKey: ["all-dishes-for-category"] });
       toast.success("Dish created");
     },
     onError: (error: Error, _variables, context) => {
@@ -185,6 +186,7 @@ export const useUpdateDish = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["dishes", data.subcategory_id] });
       queryClient.invalidateQueries({ queryKey: ["dishes", "restaurant"] });
+      queryClient.invalidateQueries({ queryKey: ["all-dishes-for-category"] });
     },
     onError: (_error, _variables, context) => {
       if (context?.previous && context.subcategoryId) {
@@ -224,6 +226,7 @@ export const useDeleteDish = () => {
     onSuccess: (subcategoryId) => {
       queryClient.invalidateQueries({ queryKey: ["dishes", subcategoryId] });
       queryClient.invalidateQueries({ queryKey: ["dishes", "restaurant"] });
+      queryClient.invalidateQueries({ queryKey: ["all-dishes-for-category"] });
       toast.success("Dish deleted");
     },
     onError: (_error, _variables, context) => {
@@ -284,6 +287,7 @@ export const useUpdateDishesOrder = () => {
       // Invalidate after completion
       queryClient.invalidateQueries({ queryKey: ["dishes", variables.subcategoryId] });
       queryClient.invalidateQueries({ queryKey: ["dishes", "restaurant"] });
+      queryClient.invalidateQueries({ queryKey: ["all-dishes-for-category"] });
     },
   });
 };

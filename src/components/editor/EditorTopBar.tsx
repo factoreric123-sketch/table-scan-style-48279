@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Eye, EyeOff, QrCode, Palette, Upload, Undo2, Redo2, LayoutGrid, Table2 } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, QrCode, Palette, Upload, Undo2, Redo2, LayoutGrid, Table2, Settings } from "lucide-react";
 import { QRCodeModal } from "@/components/editor/QRCodeModal";
 import { ThemeGalleryModal } from "@/components/editor/ThemeGalleryModal";
 import { PaywallModal } from "@/components/PaywallModal";
+import { RestaurantSettingsDialog } from "@/components/editor/RestaurantSettingsDialog";
 import { useSubscription } from "@/hooks/useSubscription";
 import type { Restaurant } from "@/hooks/useRestaurants";
 import { Theme } from "@/lib/types/theme";
@@ -21,6 +22,7 @@ interface EditorTopBarProps {
   canUndo?: boolean;
   canRedo?: boolean;
   onThemeChange?: (theme: Theme) => void;
+  onFilterToggle?: () => void;
 }
 
 export const EditorTopBar = ({
@@ -35,10 +37,12 @@ export const EditorTopBar = ({
   canUndo = false,
   canRedo = false,
   onThemeChange,
+  onFilterToggle,
 }: EditorTopBarProps) => {
   const navigate = useNavigate();
   const [showQRModal, setShowQRModal] = useState(false);
   const [showThemeDialog, setShowThemeDialog] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallFeature, setPaywallFeature] = useState("");
   const { hasPremium } = useSubscription();
@@ -164,6 +168,16 @@ export const EditorTopBar = ({
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => setShowSettingsDialog(true)}
+                  className="gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handleQRCodeClick}
                   className="gap-2"
                 >
@@ -199,6 +213,15 @@ export const EditorTopBar = ({
         restaurant={restaurant}
         onThemeChange={onThemeChange}
       />
+
+      {onFilterToggle && (
+        <RestaurantSettingsDialog
+          open={showSettingsDialog}
+          onOpenChange={setShowSettingsDialog}
+          restaurant={restaurant}
+          onFilterToggle={onFilterToggle}
+        />
+      )}
 
       <PaywallModal
         open={showPaywall}

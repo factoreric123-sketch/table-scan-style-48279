@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { generateTempId } from "@/lib/utils/uuid";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 export interface Dish {
   id: string;
@@ -141,7 +142,8 @@ export const useCreateDish = () => {
       if (context?.previous && context.subcategoryId) {
         queryClient.setQueryData(["dishes", context.subcategoryId], context.previous);
       }
-      toast.error(error.message || "Failed to create dish");
+      const message = getErrorMessage(error);
+      toast.error(`Failed to create dish: ${message}`);
     },
   });
 };
@@ -229,11 +231,12 @@ export const useDeleteDish = () => {
       queryClient.invalidateQueries({ queryKey: ["all-dishes-for-category"] });
       toast.success("Dish deleted");
     },
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       if (context?.previous && context.subcategoryId) {
         queryClient.setQueryData(["dishes", context.subcategoryId], context.previous);
       }
-      toast.error("Failed to delete dish");
+      const message = getErrorMessage(error);
+      toast.error(`Failed to delete dish: ${message}`);
     },
   });
 };
@@ -276,12 +279,13 @@ export const useUpdateDishesOrder = () => {
 
       return { previousDishes, subcategoryId };
     },
-    onError: (err, variables, context) => {
+    onError: (error, variables, context) => {
       // Rollback on error
       if (context?.previousDishes) {
         queryClient.setQueryData(["dishes", context.subcategoryId], context.previousDishes);
       }
-      toast.error("Failed to reorder dishes");
+      const message = getErrorMessage(error);
+      toast.error(`Failed to reorder dishes: ${message}`);
     },
     onSettled: (_, __, variables) => {
       // Invalidate after completion

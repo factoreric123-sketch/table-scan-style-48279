@@ -389,6 +389,7 @@ const Editor = () => {
           canUndo={canUndo}
           canRedo={canRedo}
           onThemeChange={handleThemeChange}
+          onFilterToggle={handleFilterToggle}
         />
 
       <RestaurantHeader

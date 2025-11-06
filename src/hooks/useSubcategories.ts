@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 export interface Subcategory {
   id: string;
@@ -95,8 +96,8 @@ export const useCreateSubcategory = () => {
       if (context?.previous && context.categoryId) {
         queryClient.setQueryData(["subcategories", context.categoryId], context.previous);
       }
-      const errorMessage = error instanceof Error ? error.message : "Failed to create subcategory";
-      toast.error(errorMessage);
+      const message = getErrorMessage(error);
+      toast.error(`Failed to create subcategory: ${message}`);
     },
     onSettled: (_, __, variables) => {
       if (variables.category_id) {
@@ -188,12 +189,13 @@ export const useUpdateSubcategoriesOrder = () => {
 
       return { previousSubcategories, categoryId };
     },
-    onError: (err, variables, context) => {
+    onError: (error, variables, context) => {
       // Rollback on error
       if (context?.previousSubcategories) {
         queryClient.setQueryData(["subcategories", context.categoryId], context.previousSubcategories);
       }
-      toast.error("Failed to reorder subcategories");
+      const message = getErrorMessage(error);
+      toast.error(`Failed to reorder subcategories: ${message}`);
     },
     onSettled: (_, __, variables) => {
       // Invalidate after completion

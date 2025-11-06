@@ -46,18 +46,25 @@ export const SpreadsheetRow = ({ dish, isSelected, onSelect, style }: Spreadshee
     }, 200);
   }, [dish.id, updateDish]);
 
-  const handleUpdate = (field: keyof Dish, value: any) => {
+  const handleUpdate = (field: keyof Dish, value: any, immediate = false) => {
     setLocalDish({ ...localDish, [field]: value });
-    scheduleUpdate({ [field]: value });
+    
+    if (immediate) {
+      // Immediate update for toggles - no debounce
+      updateDish.mutate({ id: dish.id, updates: { [field]: value } });
+    } else {
+      scheduleUpdate({ [field]: value });
+    }
   };
 
   const handleDelete = async () => {
-    if (confirm("Delete this dish?")) {
+    if (window.confirm("Delete this dish?")) {
       try {
         await deleteDish.mutateAsync({ id: dish.id, subcategoryId: dish.subcategory_id });
         toast.success("Dish deleted");
       } catch (error) {
-        toast.error("Failed to delete dish");
+        const message = error instanceof Error ? error.message : "Failed to delete dish";
+        toast.error(message);
       }
     }
   };
@@ -79,7 +86,8 @@ export const SpreadsheetRow = ({ dish, isSelected, onSelect, style }: Spreadshee
           await handleUpdate("image_url", url);
           toast.success("Image updated");
         } catch (error) {
-          toast.error("Failed to upload image");
+          const message = error instanceof Error ? error.message : "Failed to upload image";
+          toast.error(message);
         } finally {
           setIsUploadingImage(false);
         }
@@ -90,7 +98,7 @@ export const SpreadsheetRow = ({ dish, isSelected, onSelect, style }: Spreadshee
 
   return (
     <tr style={style} className="border-b transition-colors hover:bg-muted/30">
-      <td className="sticky left-0 z-[60] bg-background pl-4 pr-2 align-middle w-[40px] border-r border-border will-change-transform">
+      <td className="sticky left-0 z-[60] bg-background pl-4 pr-2 align-middle w-[40px] border-r border-border will-change-transform" style={{ backgroundColor: 'hsl(var(--background))' }}>
         <input
           type="checkbox"
           checked={isSelected}
@@ -98,8 +106,8 @@ export const SpreadsheetRow = ({ dish, isSelected, onSelect, style }: Spreadshee
           className="cursor-pointer"
         />
       </td>
-      <td className="sticky left-[40px] z-[50] bg-background p-4 align-middle w-[100px] border-r border-border will-change-transform">
-        <div 
+      <td className="sticky left-[40px] z-[50] bg-background p-4 align-middle w-[100px] border-r border-border will-change-transform" style={{ backgroundColor: 'hsl(var(--background))' }}>
+        <div
           onClick={handleImageClick}
           className="w-16 h-16 rounded-lg overflow-hidden cursor-pointer group relative border border-border hover:border-primary transition-colors"
         >
@@ -125,7 +133,7 @@ export const SpreadsheetRow = ({ dish, isSelected, onSelect, style }: Spreadshee
           )}
         </div>
       </td>
-      <td className="sticky left-[140px] z-[40] bg-background p-4 align-middle w-[220px] border-r-2 border-border shadow-[2px_0_4px_rgba(0,0,0,0.1)] will-change-transform">
+      <td className="sticky left-[140px] z-[40] bg-background p-4 align-middle w-[220px] border-r-2 border-border shadow-[2px_0_4px_rgba(0,0,0,0.1)] will-change-transform" style={{ backgroundColor: 'hsl(var(--background))' }}>
         <EditableCell
           type="text"
           value={localDish.name}
@@ -163,10 +171,20 @@ export const SpreadsheetRow = ({ dish, isSelected, onSelect, style }: Spreadshee
             spicy: localDish.is_spicy,
           }}
           onSave={(value) => {
-            scheduleUpdate({
+            setLocalDish({
+              ...localDish,
               is_vegetarian: value.vegetarian,
               is_vegan: value.vegan,
               is_spicy: value.spicy,
+            });
+            // Immediate update for toggles
+            updateDish.mutate({
+              id: dish.id,
+              updates: {
+                is_vegetarian: value.vegetarian,
+                is_vegan: value.vegan,
+                is_spicy: value.spicy,
+              }
             });
           }}
         />
@@ -181,11 +199,22 @@ export const SpreadsheetRow = ({ dish, isSelected, onSelect, style }: Spreadshee
             chef: localDish.is_chef_recommendation,
           }}
           onSave={(value) => {
-            scheduleUpdate({
+            setLocalDish({
+              ...localDish,
               is_new: value.new,
               is_special: value.special,
               is_popular: value.popular,
               is_chef_recommendation: value.chef,
+            });
+            // Immediate update for toggles
+            updateDish.mutate({
+              id: dish.id,
+              updates: {
+                is_new: value.new,
+                is_special: value.special,
+                is_popular: value.popular,
+                is_chef_recommendation: value.chef,
+              }
             });
           }}
         />

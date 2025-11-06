@@ -174,6 +174,8 @@ export const EditableCell = (props: EditableCellProps) => {
         ...values,
         [key]: checked,
       };
+      // Update local state immediately for instant feedback
+      setLocalValue(newValues);
       props.onSave(newValues);
     };
 

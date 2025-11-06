@@ -24,13 +24,17 @@ export const QRCodeModal = ({
   const [size, setSize] = useState<number>(250);
   const [copied, setCopied] = useState(false);
   
-  // Use canonical URL with /menu/ prefix
+  // Direct link for "Open Live" and clipboard
   const baseUrl = import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin;
-  const url = `${baseUrl}/menu/${restaurantSlug}`;
+  const directUrl = `${baseUrl}/menu/${restaurantSlug}`;
+  
+  // Universal resolver for QR code (resilient)
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const qrUrl = `https://${projectId}.supabase.co/functions/v1/resolve-menu?slug=${restaurantSlug}`;
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(directUrl);
       setCopied(true);
       toast.success("Link copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
@@ -40,7 +44,7 @@ export const QRCodeModal = ({
   };
 
   const handleOpenLive = () => {
-    window.open(url, "_blank");
+    window.open(directUrl, "_blank");
   };
 
   const handleDownloadPNG = () => {
@@ -105,7 +109,7 @@ export const QRCodeModal = ({
               Scan this QR code or share the link to view your menu:
             </div>
             <code className="text-xs bg-muted px-2 py-1 rounded block overflow-x-auto">
-              {url}
+              {directUrl}
             </code>
             <div className="flex gap-2">
               <Button
@@ -142,7 +146,7 @@ export const QRCodeModal = ({
             <div className="bg-white p-4 rounded-lg">
               <QRCodeCanvas
                 id="qr-canvas"
-                value={url}
+                value={qrUrl}
                 size={size}
                 level="H"
                 includeMargin
@@ -153,7 +157,7 @@ export const QRCodeModal = ({
           <div className="hidden">
             <QRCodeSVG
               id="qr-svg"
-              value={url}
+              value={qrUrl}
               size={size}
               level="H"
               includeMargin

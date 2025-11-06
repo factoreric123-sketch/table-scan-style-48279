@@ -11,7 +11,7 @@ export interface Subcategory {
   created_at: string;
 }
 
-export const useSubcategories = (categoryId: string) => {
+export const useSubcategories = (categoryId: string, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ["subcategories", categoryId],
     queryFn: async () => {
@@ -24,7 +24,7 @@ export const useSubcategories = (categoryId: string) => {
       if (error) throw error;
       return data as Subcategory[];
     },
-    enabled: !!categoryId,
+    enabled: !!categoryId && (options?.enabled ?? true),
     staleTime: 1000 * 60, // 1 minute
     gcTime: 1000 * 60 * 10, // 10 minutes cache
     placeholderData: (prev) => prev, // Keep previous data during refetch

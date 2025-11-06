@@ -24,9 +24,13 @@ export const ShareDialog = ({
   const [size, setSize] = useState<number>(250);
   const [copied, setCopied] = useState(false);
   
-  // Use canonical URL - prefer VITE_PUBLIC_SITE_URL, fallback to origin
+  // Direct live link (fast, for in-app use)
   const baseUrl = import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin;
   const liveUrl = `${baseUrl}/menu/${restaurantSlug}`;
+  
+  // Universal resolver URL (resilient, for QR codes)
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const resolverUrl = `https://${projectId}.supabase.co/functions/v1/resolve-menu?slug=${restaurantSlug}`;
 
   const handleCopyLink = async () => {
     try {
@@ -147,7 +151,7 @@ export const ShareDialog = ({
               <div className="bg-white p-4 rounded-lg">
                 <QRCodeCanvas
                   id="share-qr-canvas"
-                  value={liveUrl}
+                  value={resolverUrl}
                   size={size}
                   level="H"
                   includeMargin
@@ -159,7 +163,7 @@ export const ShareDialog = ({
             <div className="hidden">
               <QRCodeSVG
                 id="share-qr-svg"
-                value={liveUrl}
+                value={resolverUrl}
                 size={size}
                 level="H"
                 includeMargin

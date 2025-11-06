@@ -12,7 +12,7 @@ export interface Category {
   created_at: string;
 }
 
-export const useCategories = (restaurantId: string) => {
+export const useCategories = (restaurantId: string, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ["categories", restaurantId],
     queryFn: async () => {
@@ -25,7 +25,7 @@ export const useCategories = (restaurantId: string) => {
       if (error) throw error;
       return data as Category[];
     },
-    enabled: !!restaurantId,
+    enabled: !!restaurantId && (options?.enabled ?? true),
     staleTime: 1000 * 60, // 1 minute
     gcTime: 1000 * 60 * 10, // 10 minutes cache
     placeholderData: (prev) => prev, // Keep previous data during refetch

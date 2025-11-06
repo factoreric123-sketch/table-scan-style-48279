@@ -19,8 +19,14 @@ import { logger } from "@/lib/logger";
 
 const PublicMenu = () => {
   const { slug } = useParams<{ slug: string }>();
+  
+  // Step 1: Resolve restaurant first (resolve-first pattern)
   const { data: restaurant, isLoading: restaurantLoading } = useRestaurant(slug || "");
-  const { data: categories } = useCategories(restaurant?.id || "");
+  
+  // Step 2: Only fetch categories if restaurant exists and is published
+  const { data: categories } = useCategories(restaurant?.id || "", {
+    enabled: !!restaurant?.id && restaurant.published === true,
+  });
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [activeSubcategory, setActiveSubcategory] = useState<string>("");
   const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
@@ -34,7 +40,11 @@ const PublicMenu = () => {
   useThemePreview(restaurant?.theme as any, !!restaurant);
 
   const activeCategoryObj = categories?.find((c) => c.id === activeCategory);
-  const { data: subcategories } = useSubcategories(activeCategoryObj?.id || "");
+  
+  // Step 3: Only fetch subcategories if category exists and restaurant is published
+  const { data: subcategories } = useSubcategories(activeCategoryObj?.id || "", {
+    enabled: !!activeCategoryObj?.id && restaurant?.published === true,
+  });
 
   // Set initial active category and subcategory
   useEffect(() => {
@@ -151,24 +161,29 @@ const PublicMenu = () => {
     );
   }
 
-  // Check if restaurant owner has premium subscription
+  // Step 4: Check premium status (non-throwing, only if restaurant exists and is published)
   const { data: ownerHasPremium, isLoading: premiumLoading } = useQuery({
     queryKey: ['owner-premium', restaurant?.owner_id],
     queryFn: async () => {
       if (!restaurant?.owner_id) return false;
       
-      const { data, error } = await supabase
-        .rpc('has_premium_subscription', { user_id_param: restaurant.owner_id });
+      try {
+        const { data, error } = await supabase
+          .rpc('has_premium_subscription', { user_id_param: restaurant.owner_id });
 
-      if (error) {
-        logger.error('Error checking premium status:', error);
+        if (error) {
+          logger.error('Error checking premium status:', error);
+          return false;
+        }
+
+        return data;
+      } catch (err) {
+        logger.error('Premium check failed:', err);
         return false;
       }
-
-      return data;
     },
-    enabled: !!restaurant?.owner_id,
-    staleTime: 1000 * 60 * 10, // 10 minutes - cache premium status longer
+    enabled: !!restaurant?.owner_id && restaurant?.published === true,
+    staleTime: 1000 * 60 * 10,
   });
 
 
@@ -198,7 +213,7 @@ const PublicMenu = () => {
   const categoryNames = categories?.map((c) => c.name) || [];
   const activeCategoryName = categories?.find((c) => c.id === activeCategory)?.name || "";
 
-  // Get all dishes for all subcategories in the active category
+  // Step 5: Get all dishes only if category exists and restaurant is published
   const { data: allDishesForCategory } = useQuery({
     queryKey: ['all-dishes-for-category', activeCategoryObj?.id],
     queryFn: async () => {
@@ -213,8 +228,8 @@ const PublicMenu = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!activeCategoryObj?.id,
-    staleTime: 1000 * 60 * 10, // 10 minutes for public menu
+    enabled: !!activeCategoryObj?.id && restaurant?.published === true,
+    staleTime: 1000 * 60 * 10,
   });
 
   // Group dishes by subcategory

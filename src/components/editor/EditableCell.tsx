@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Plus, X } from "lucide-react";
 import { Wheat, Milk, Egg, Fish, Shell, Nut, Beef, Flame, Salad, Sprout, Sparkles, Star, TrendingUp, ChefHat } from "lucide-react";
@@ -162,39 +164,38 @@ export const EditableCell = (props: EditableCellProps) => {
     );
   }
 
-  // Boolean group (Dietary or Badges)
+  // Boolean group (Dietary or Badges) - Using switches for table view
   if (props.type === "boolean-group") {
     const iconMap = { ...dietaryIcons, ...badgeIcons };
     const values = props.value;
 
-    const handleToggle = (key: string) => {
+    const handleToggle = (key: string, checked: boolean) => {
       const newValues = {
         ...values,
-        [key]: !values[key],
+        [key]: checked,
       };
       props.onSave(newValues);
     };
 
     return (
-      <div className="flex flex-wrap items-center gap-1 min-h-[32px]">
+      <div className="flex flex-col gap-2">
         {Object.entries(values).map(([key, active]) => {
           const Icon = iconMap[key];
+          const label = key === "chef" ? "Chef's Pick" : capitalize(key);
+          
           return (
-            <Badge
-              key={key}
-              variant={active ? "default" : "outline"}
-              className={cn(
-                "gap-1 px-2 py-0.5 text-xs h-6 cursor-pointer transition-all active:scale-95 select-none",
-                active ? "hover:opacity-90" : "hover:bg-muted"
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleToggle(key);
-              }}
-            >
-              {Icon && <Icon className="h-3 w-3" />}
-              {capitalize(key)}
-            </Badge>
+            <div key={key} className="flex items-center justify-between gap-2">
+              <Label htmlFor={`switch-${key}`} className="flex items-center gap-1.5 text-xs cursor-pointer m-0">
+                {Icon && <Icon className="h-3 w-3" />}
+                <span>{label}</span>
+              </Label>
+              <Switch
+                id={`switch-${key}`}
+                checked={active}
+                onCheckedChange={(checked) => handleToggle(key, checked)}
+                className="scale-75"
+              />
+            </div>
           );
         })}
       </div>

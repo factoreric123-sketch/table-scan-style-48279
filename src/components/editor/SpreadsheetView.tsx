@@ -41,35 +41,40 @@ export const SpreadsheetView = ({
 
   const handleExport = useCallback(() => {
     try {
-      const exportData = dishes.map((dish) => ({
-        Name: dish.name,
-        Description: dish.description || "",
-        Price: dish.price,
-        Calories: dish.calories || "",
-        Allergens: dish.allergens?.join(", ") || "",
-        Vegetarian: dish.is_vegetarian ? "Yes" : "No",
-        Vegan: dish.is_vegan ? "Yes" : "No",
-        Spicy: dish.is_spicy ? "Yes" : "No",
-        New: dish.is_new ? "Yes" : "No",
-        Special: dish.is_special ? "Yes" : "No",
-        Popular: dish.is_popular ? "Yes" : "No",
-        "Chef's Pick": dish.is_chef_recommendation ? "Yes" : "No",
-      }));
+      // Export ALL dishes with their category and subcategory information
+      const exportData = dishes.map((dish) => {
+        const subcategory = subcategories.find((s) => s.id === dish.subcategory_id);
+        const category = categories.find((c) => c.id === subcategory?.category_id);
+        
+        return {
+          Category: category?.name || "",
+          Subcategory: subcategory?.name || "",
+          Name: dish.name,
+          Description: dish.description || "",
+          Price: dish.price,
+          Calories: dish.calories || "",
+          Allergens: dish.allergens?.join(", ") || "",
+          Vegetarian: dish.is_vegetarian ? "Yes" : "No",
+          Vegan: dish.is_vegan ? "Yes" : "No",
+          Spicy: dish.is_spicy ? "Yes" : "No",
+          New: dish.is_new ? "Yes" : "No",
+          Special: dish.is_special ? "Yes" : "No",
+          Popular: dish.is_popular ? "Yes" : "No",
+          "Chef's Pick": dish.is_chef_recommendation ? "Yes" : "No",
+        };
+      });
 
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       
-      const subcategory = subcategories.find((s) => s.id === activeSubcategoryId);
-      const sheetName = subcategory?.name || "Dishes";
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Full Menu");
+      XLSX.writeFile(workbook, `menu_full_${Date.now()}.xlsx`);
       
-      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-      XLSX.writeFile(workbook, `menu_${sheetName}_${Date.now()}.xlsx`);
-      
-      toast.success("Menu exported successfully");
+      toast.success("Full menu exported successfully");
     } catch (error) {
       toast.error("Failed to export menu");
     }
-  }, [dishes, subcategories, activeSubcategoryId]);
+  }, [dishes, subcategories, categories]);
 
   const handleImportClick = () => {
     const input = document.createElement("input");
@@ -160,12 +165,12 @@ export const SpreadsheetView = ({
 
       <div
         ref={parentRef}
-        className="flex-1 overflow-x-auto overflow-y-auto bg-background px-12"
+        className="flex-1 overflow-x-auto overflow-y-auto bg-background"
       >
-        <table className="min-w-[1680px] w-full caption-bottom text-sm border-collapse">
+        <table className="min-w-[1580px] w-full caption-bottom text-sm border-collapse">
           <thead className="sticky top-0 z-20 bg-muted border-b">
             <tr className="border-b">
-              <th className="sticky left-0 z-[60] bg-muted h-12 px-6 text-left align-middle font-semibold text-sm w-[40px] border-r border-border will-change-transform">
+              <th className="sticky left-0 z-[60] bg-muted h-12 pl-4 pr-2 text-left align-middle font-semibold text-sm w-[40px] border-r border-border will-change-transform">
                 <input
                   type="checkbox"
                   checked={selectedRows.size === dishes.length && dishes.length > 0}
@@ -182,13 +187,13 @@ export const SpreadsheetView = ({
               <th className="sticky left-[40px] z-[50] bg-muted h-12 px-4 text-left align-middle font-semibold text-sm w-[100px] border-r border-border will-change-transform">Image</th>
               <th className="sticky left-[140px] z-[40] bg-muted h-12 px-4 text-left align-middle font-semibold text-sm w-[220px] border-r-2 border-border shadow-[2px_0_4px_rgba(0,0,0,0.1)] will-change-transform">Name</th>
               <th className="h-12 px-4 text-left align-middle font-semibold text-sm w-[300px]">Description</th>
-              <th className="h-12 px-4 text-left align-middle font-semibold text-sm w-[100px]">Price</th>
-              <th className="h-12 px-4 text-left align-middle font-semibold text-sm w-[280px]">Allergens</th>
-              <th className="h-12 px-4 text-left align-middle font-semibold text-sm w-[200px]">Dietary Info</th>
-              <th className="h-12 px-4 text-left align-middle font-semibold text-sm w-[240px]">Badges & Labels</th>
-              <th className="h-12 px-4 text-left align-middle font-semibold text-sm w-[100px]">Calories</th>
-              <th className="h-12 px-4 text-left align-middle font-semibold text-sm w-[100px]">Options</th>
-              <th className="h-12 px-4 text-left align-middle font-semibold text-sm w-[100px]">Actions</th>
+              <th className="h-12 px-4 text-center align-middle font-semibold text-sm w-[100px]">Price</th>
+              <th className="h-12 px-4 text-center align-middle font-semibold text-sm w-[280px]">Allergens</th>
+              <th className="h-12 px-4 text-center align-middle font-semibold text-sm w-[150px]">Dietary Info</th>
+              <th className="h-12 px-4 text-center align-middle font-semibold text-sm w-[180px]">Badges & Labels</th>
+              <th className="h-12 px-4 text-center align-middle font-semibold text-sm w-[100px]">Calories</th>
+              <th className="h-12 px-4 text-center align-middle font-semibold text-sm w-[100px]">Options</th>
+              <th className="h-12 px-4 text-center align-middle font-semibold text-sm w-[100px]">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -227,6 +232,9 @@ export const SpreadsheetView = ({
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
         data={importData}
+        restaurantId={restaurantId}
+        categories={categories}
+        subcategories={subcategories}
         subcategoryId={activeSubcategoryId}
       />
     </div>

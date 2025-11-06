@@ -2,22 +2,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCreateDish } from "@/hooks/useDishes";
+import { useCreateCategory, type Category } from "@/hooks/useCategories";
+import { useCreateSubcategory, type Subcategory } from "@/hooks/useSubcategories";
 import { toast } from "sonner";
 
 interface ExcelImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   data: any[];
-  subcategoryId: string;
+  restaurantId: string;
+  categories: Category[];
+  subcategories: Subcategory[];
+  subcategoryId?: string;
 }
 
 export const ExcelImportDialog = ({
   open,
   onOpenChange,
   data,
+  restaurantId,
+  categories,
+  subcategories,
   subcategoryId,
 }: ExcelImportDialogProps) => {
   const createDish = useCreateDish();
+  const createCategory = useCreateCategory();
+  const createSubcategory = useCreateSubcategory();
 
   const parseBoolean = (value: any): boolean => {
     if (typeof value === "boolean") return value;
@@ -36,7 +46,56 @@ export const ExcelImportDialog = ({
   const handleImport = async () => {
     try {
       let imported = 0;
+      const categoryMap = new Map<string, string>(); // name -> id
+      const subcategoryMap = new Map<string, string>(); // name -> id
+      
+      // Initialize with existing categories and subcategories
+      categories.forEach(cat => categoryMap.set(cat.name.toLowerCase(), cat.id));
+      subcategories.forEach(sub => subcategoryMap.set(sub.name.toLowerCase(), sub.id));
+      
       for (const row of data) {
+        let targetSubcategoryId = subcategoryId;
+        
+        // If row has Category and Subcategory columns, use them
+        const categoryName = row.Category || row.category;
+        const subcategoryName = row.Subcategory || row.subcategory;
+        
+        if (categoryName && subcategoryName) {
+          const categoryKey = String(categoryName).trim().toLowerCase();
+          const subcategoryKey = String(subcategoryName).trim().toLowerCase();
+          
+          // Get or create category
+          let categoryId = categoryMap.get(categoryKey);
+          if (!categoryId) {
+            const newCategory = await createCategory.mutateAsync({
+              restaurant_id: restaurantId,
+              name: String(categoryName).trim(),
+              order_index: categories.length + categoryMap.size,
+            });
+            categoryId = newCategory.id;
+            categoryMap.set(categoryKey, categoryId);
+          }
+          
+          // Get or create subcategory
+          let newSubcategoryId = subcategoryMap.get(subcategoryKey);
+          if (!newSubcategoryId) {
+            const newSubcategory = await createSubcategory.mutateAsync({
+              category_id: categoryId,
+              name: String(subcategoryName).trim(),
+              order_index: subcategories.length + subcategoryMap.size,
+            });
+            newSubcategoryId = newSubcategory.id;
+            subcategoryMap.set(subcategoryKey, newSubcategoryId);
+          }
+          
+          targetSubcategoryId = newSubcategoryId;
+        }
+        
+        if (!targetSubcategoryId) {
+          toast.error("No subcategory specified for import");
+          return;
+        }
+        
         const dishData = {
           name: row.Name || row.name || "Unnamed Dish",
           description: row.Description || row.description || "",
@@ -50,7 +109,7 @@ export const ExcelImportDialog = ({
           is_special: parseBoolean(row.Special || row.special),
           is_popular: parseBoolean(row.Popular || row.popular),
           is_chef_recommendation: parseBoolean(row["Chef's Pick"] || row.chef),
-          subcategory_id: subcategoryId,
+          subcategory_id: targetSubcategoryId,
           order_index: imported,
         };
 

@@ -90,7 +90,7 @@ export const SpreadsheetRow = ({ dish, isSelected, onSelect, style }: Spreadshee
 
   return (
     <tr style={style} className="border-b transition-colors hover:bg-muted/30">
-      <td className="sticky left-0 z-[60] bg-background p-4 align-middle w-[40px] border-r border-border will-change-transform">
+      <td className="sticky left-0 z-[60] bg-background pl-4 pr-2 align-middle w-[40px] border-r border-border will-change-transform">
         <input
           type="checkbox"
           checked={isSelected}
@@ -154,7 +154,7 @@ export const SpreadsheetRow = ({ dish, isSelected, onSelect, style }: Spreadshee
           options={["gluten", "dairy", "eggs", "fish", "shellfish", "nuts", "soy", "pork", "beef", "poultry"]}
         />
       </td>
-      <td className="p-4 align-middle w-[200px]">
+      <td className="p-4 align-middle w-[150px]">
         <EditableCell
           type="boolean-group"
           value={{
@@ -171,7 +171,7 @@ export const SpreadsheetRow = ({ dish, isSelected, onSelect, style }: Spreadshee
           }}
         />
       </td>
-      <td className="p-4 align-middle w-[240px]">
+      <td className="p-4 align-middle w-[180px]">
         <EditableCell
           type="boolean-group"
           value={{

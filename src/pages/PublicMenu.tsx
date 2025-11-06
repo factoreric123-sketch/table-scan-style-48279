@@ -30,7 +30,7 @@ const PublicMenu = ({ slugOverride }: PublicMenuProps = {}) => {
   
   // Step 2: Only fetch categories if restaurant exists and is published
   const { data: categories } = useCategories(restaurant?.id || "", {
-    enabled: !!restaurant?.id && restaurant.published === true,
+    enabled: !!restaurant?.id && restaurant?.published === true,
   });
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [activeSubcategory, setActiveSubcategory] = useState<string>("");

@@ -45,17 +45,26 @@ export const camelToKebab = (str: string): string => {
  * Dynamically load a Google Font if not already loaded
  */
 export const loadGoogleFont = (fontFamily: string): void => {
-  if (loadedFonts.has(fontFamily)) return;
+  try {
+    if (!fontFamily || loadedFonts.has(fontFamily)) return;
 
-  // Check if font is already in the document
-  const existingLink = document.querySelector(`link[href*="${fontFamily.replace(/\s+/g, '+')}"]`);
-  if (existingLink) {
+    // Check if document exists (SSR safety)
+    if (typeof document === 'undefined') return;
+
+    // Check if font is already in the document
+    const safeFamily = fontFamily.replace(/\s+/g, '+');
+    const existingLink = document.querySelector(`link[href*="${safeFamily}"]`);
+    if (existingLink) {
+      loadedFonts.add(fontFamily);
+      return;
+    }
+
+    // All fonts are preloaded in index.html, so just mark as loaded
     loadedFonts.add(fontFamily);
-    return;
+  } catch (err) {
+    console.warn(`[loadGoogleFont] Failed to load font ${fontFamily}:`, err);
+    // Don't throw - font loading is non-critical
   }
-
-  // All fonts are preloaded in index.html, so just mark as loaded
-  loadedFonts.add(fontFamily);
 };
 
 /**

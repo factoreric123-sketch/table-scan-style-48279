@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, Component, ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { Bookmark, Share2, Menu as MenuIcon, Crown, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,40 @@ interface PublicMenuProps {
   slugOverride?: string;
 }
 
-const PublicMenu = ({ slugOverride }: PublicMenuProps = {}) => {
+// Error Boundary specifically for PublicMenu
+class PublicMenuErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('[PublicMenu] Caught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="text-center space-y-4">
+            <h1 className="text-3xl font-bold">Unable to Load Menu</h1>
+            <p className="text-muted-foreground text-lg">
+              We couldn't load this menu. Please try refreshing the page.
+            </p>
+            <Button onClick={() => window.location.reload()} className="mt-4">
+              Refresh Page
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+const PublicMenuContent = ({ slugOverride }: PublicMenuProps = {}) => {
   const { slug: urlSlug } = useParams<{ slug: string }>();
   const slug = slugOverride || urlSlug;
   
@@ -66,39 +99,54 @@ const PublicMenu = ({ slugOverride }: PublicMenuProps = {}) => {
 
   // Scroll to subcategory when clicked with offset for sticky header
   const handleSubcategoryClick = useCallback((subcategoryId: string) => {
-    setActiveSubcategory(subcategoryId);
-    const subcategoryName = subcategories?.find(s => s.id === subcategoryId)?.name;
-    if (subcategoryName) {
-      const element = subcategoryRefs.current[subcategoryName];
-      if (element) {
-        const headerOffset = 120; // Height of sticky navigation
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-        
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
+    try {
+      setActiveSubcategory(subcategoryId);
+      
+      // Check if window exists
+      if (typeof window === 'undefined') return;
+      
+      const subcategoryName = subcategories?.find(s => s.id === subcategoryId)?.name;
+      if (subcategoryName) {
+        const element = subcategoryRefs.current[subcategoryName];
+        if (element && element.getBoundingClientRect) {
+          const headerOffset = 120; // Height of sticky navigation
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
       }
+    } catch (err) {
+      console.warn('[PublicMenu] Subcategory click error:', err);
     }
   }, [subcategories]);
 
   // Update active subcategory based on scroll position
   useEffect(() => {
     if (!subcategories || subcategories.length === 0) return;
+    
+    // Check if window exists (SSR safety)
+    if (typeof window === 'undefined') return;
 
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 250;
-      
-      for (const subcategory of subcategories) {
-        const element = subcategoryRefs.current[subcategory.name];
-        if (element) {
-          const { offsetTop, offsetHeight } = element;
-          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
-            setActiveSubcategory(subcategory.id);
-            break;
+      try {
+        const scrollPosition = window.scrollY + 250;
+        
+        for (const subcategory of subcategories) {
+          const element = subcategoryRefs.current[subcategory.name];
+          if (element && element.offsetTop !== undefined && element.offsetHeight !== undefined) {
+            const { offsetTop, offsetHeight } = element;
+            if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+              setActiveSubcategory(subcategory.id);
+              break;
+            }
           }
         }
+      } catch (err) {
+        console.warn('[PublicMenu] Scroll handler error:', err);
       }
     };
 
@@ -494,5 +542,11 @@ const PublicMenu = ({ slugOverride }: PublicMenuProps = {}) => {
     </div>
   );
 };
+
+const PublicMenu = (props: PublicMenuProps) => (
+  <PublicMenuErrorBoundary>
+    <PublicMenuContent {...props} />
+  </PublicMenuErrorBoundary>
+);
 
 export default PublicMenu;

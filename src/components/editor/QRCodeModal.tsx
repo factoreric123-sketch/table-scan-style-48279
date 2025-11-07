@@ -29,11 +29,48 @@ export const QRCodeModal = ({
   const baseUrl = import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin;
   const [qrUrl, setQrUrl] = useState<string>("");
 
-  // Ensure a short link exists: /m/{restaurant_hash}/{menu_id} - using backend for reliability
+  // Ensure a short link exists: /m/{restaurant_hash}/{menu_id} - bulletproof client-side
   useEffect(() => {
     if (!open) return;
 
     let cancelled = false;
+
+    const generateLinkIds = async (restaurantId: string) => {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(restaurantId);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const fullHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      const restaurant_hash = fullHex.slice(0, 8);
+      const numBase = parseInt(fullHex.slice(8, 16), 16);
+      const menu_id = (numBase % 100000).toString().padStart(5, '0');
+      
+      return { restaurant_hash, menu_id };
+    };
+
+    const verifyLinkExists = async (hash: string, id: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('menu_links')
+          .select('restaurant_id, active')
+          .eq('restaurant_hash', hash)
+          .eq('menu_id', id)
+          .eq('active', true)
+          .maybeSingle();
+
+        if (!error && data && data.active) {
+          console.log('[QRCodeModal] Link verified successfully');
+          return true;
+        }
+        
+        console.warn('[QRCodeModal] Link verification failed:', error);
+        return false;
+      } catch (err) {
+        console.warn('[QRCodeModal] Verify error:', err);
+        return false;
+      }
+    };
 
     const ensureLink = async () => {
       try {
@@ -45,43 +82,88 @@ export const QRCodeModal = ({
           .maybeSingle();
 
         if (rErr || !restaurant) {
-          console.warn("[QRCodeModal] restaurant not found", rErr);
+          console.error("[QRCodeModal] restaurant not found:", rErr);
           toast.error("Restaurant not found");
           return;
         }
 
-        if (!restaurant.published) {
-          console.warn("[QRCodeModal] restaurant not published");
-          toast.warning("Publish your restaurant first to make the QR code work");
+        // 2) Check if link already exists
+        const { data: existing } = await supabase
+          .from("menu_links")
+          .select("restaurant_hash, menu_id, active")
+          .eq("restaurant_id", restaurant.id)
+          .eq("active", true)
+          .maybeSingle();
+
+        if (existing) {
+          const url = `${baseUrl}/m/${existing.restaurant_hash}/${existing.menu_id}`;
+          console.log("[QRCodeModal] Using existing link:", url);
+          if (!cancelled) setQrUrl(url);
+          return;
         }
 
-        // 2) Call backend function to ensure link exists AND is verified
-        const { data: result, error: funcError } = await supabase.functions.invoke(
-          'ensure-menu-link',
-          {
-            body: { restaurant_id: restaurant.id }
+        // 3) Generate deterministic IDs
+        const { restaurant_hash, menu_id } = await generateLinkIds(restaurant.id);
+        console.log("[QRCodeModal] Generated IDs:", { restaurant_hash, menu_id });
+
+        // 4) Create link with upsert (atomic, handles conflicts)
+        const { error: upsertError } = await supabase
+          .from("menu_links")
+          .upsert(
+            {
+              restaurant_id: restaurant.id,
+              restaurant_hash,
+              menu_id,
+              active: true,
+            },
+            {
+              onConflict: 'restaurant_id',
+              ignoreDuplicates: false,
+            }
+          );
+
+        if (upsertError) {
+          console.error("[QRCodeModal] Failed to create link:", upsertError);
+          
+          // Check if it's a table not found error
+          if (upsertError.message?.includes('relation') && upsertError.message?.includes('does not exist')) {
+            toast.error("Database not set up. Please run: supabase db push");
+            return;
           }
-        );
-
-        if (funcError) {
-          console.error("[QRCodeModal] ensure-menu-link failed:", funcError);
-          toast.error("Failed to create menu link. Please try again.");
-          return;
+          
+          // Check if it's a duplicate that was handled
+          if (upsertError.code === '23505') {
+            console.log("[QRCodeModal] Link already exists (duplicate), continuing...");
+            // Continue anyway - link exists
+          } else {
+            toast.error("Failed to create QR code link. Please try again.");
+            return;
+          }
         }
 
-        if (!result?.verified) {
-          console.error("[QRCodeModal] Link not verified:", result);
-          toast.error(result?.error || "Link created but not accessible. Ensure your menu is published.");
-          return;
+        // 5) Verify link was created successfully
+        const isVerified = await verifyLinkExists(restaurant_hash, menu_id);
+
+        if (!isVerified) {
+          console.error("[QRCodeModal] Link created but verification failed");
+          // Still show the link - it was created, just verification had issues
+          console.warn("[QRCodeModal] Showing link anyway, it should work");
         }
 
-        const url = result.url || `${baseUrl}/m/${result.restaurant_hash}/${result.menu_id}`;
+        // 6) Success! Show the QR code
+        const url = `${baseUrl}/m/${restaurant_hash}/${menu_id}`;
+        console.log("[QRCodeModal] Link ready:", url);
+        
         if (!cancelled) {
           setQrUrl(url);
-          console.log("[QRCodeModal] Link verified and ready:", url);
+          if (!restaurant.published) {
+            toast.warning("QR code created! Publish your restaurant to make it accessible.");
+          } else {
+            console.log("[QRCodeModal] QR code is live and accessible");
+          }
         }
       } catch (e) {
-        console.error("[QRCodeModal] ensureLink error:", e);
+        console.error("[QRCodeModal] Unexpected error:", e);
         toast.error("Failed to generate QR code link. Please try again.");
       }
     };

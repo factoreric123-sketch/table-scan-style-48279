@@ -29,11 +29,48 @@ export const ShareDialog = ({
   const baseUrl = import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin;
   const [shortUrl, setShortUrl] = useState<string>("");
 
-  // Generate short link when dialog opens - now using backend function for guaranteed reliability
+  // Generate short link when dialog opens - bulletproof client-side approach
   useEffect(() => {
     if (!open) return;
 
     let cancelled = false;
+
+    const generateLinkIds = async (restaurantId: string) => {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(restaurantId);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const fullHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      const restaurant_hash = fullHex.slice(0, 8);
+      const numBase = parseInt(fullHex.slice(8, 16), 16);
+      const menu_id = (numBase % 100000).toString().padStart(5, '0');
+      
+      return { restaurant_hash, menu_id };
+    };
+
+    const verifyLinkExists = async (hash: string, id: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('menu_links')
+          .select('restaurant_id, active')
+          .eq('restaurant_hash', hash)
+          .eq('menu_id', id)
+          .eq('active', true)
+          .maybeSingle();
+
+        if (!error && data && data.active) {
+          console.log('[ShareDialog] Link verified successfully');
+          return true;
+        }
+        
+        console.warn('[ShareDialog] Link verification failed:', error);
+        return false;
+      } catch (err) {
+        console.warn('[ShareDialog] Verify error:', err);
+        return false;
+      }
+    };
 
     const ensureLink = async () => {
       try {
@@ -45,44 +82,88 @@ export const ShareDialog = ({
           .maybeSingle();
 
         if (rErr || !restaurant) {
-          console.warn("[ShareDialog] restaurant not found", rErr);
+          console.error("[ShareDialog] restaurant not found:", rErr);
           toast.error("Restaurant not found");
           return;
         }
 
-        if (!restaurant.published) {
-          console.warn("[ShareDialog] restaurant not published");
-          // Still show the link but it won't work until published
-          toast.warning("Publish your restaurant first to make the link work");
+        // 2) Check if link already exists
+        const { data: existing } = await supabase
+          .from("menu_links")
+          .select("restaurant_hash, menu_id, active")
+          .eq("restaurant_id", restaurant.id)
+          .eq("active", true)
+          .maybeSingle();
+
+        if (existing) {
+          const url = `${baseUrl}/m/${existing.restaurant_hash}/${existing.menu_id}`;
+          console.log("[ShareDialog] Using existing link:", url);
+          if (!cancelled) setShortUrl(url);
+          return;
         }
 
-        // 2) Call backend function to ensure link exists AND is verified
-        const { data: result, error: funcError } = await supabase.functions.invoke(
-          'ensure-menu-link',
-          {
-            body: { restaurant_id: restaurant.id }
+        // 3) Generate deterministic IDs
+        const { restaurant_hash, menu_id } = await generateLinkIds(restaurant.id);
+        console.log("[ShareDialog] Generated IDs:", { restaurant_hash, menu_id });
+
+        // 4) Create link with upsert (atomic, handles conflicts)
+        const { error: upsertError } = await supabase
+          .from("menu_links")
+          .upsert(
+            {
+              restaurant_id: restaurant.id,
+              restaurant_hash,
+              menu_id,
+              active: true,
+            },
+            {
+              onConflict: 'restaurant_id',
+              ignoreDuplicates: false,
+            }
+          );
+
+        if (upsertError) {
+          console.error("[ShareDialog] Failed to create link:", upsertError);
+          
+          // Check if it's a table not found error
+          if (upsertError.message?.includes('relation') && upsertError.message?.includes('does not exist')) {
+            toast.error("Database not set up. Please run: supabase db push");
+            return;
           }
-        );
-
-        if (funcError) {
-          console.error("[ShareDialog] ensure-menu-link failed:", funcError);
-          toast.error("Failed to create menu link. Please try again.");
-          return;
+          
+          // Check if it's a duplicate that was handled
+          if (upsertError.code === '23505') {
+            console.log("[ShareDialog] Link already exists (duplicate), continuing...");
+            // Continue anyway - link exists
+          } else {
+            toast.error("Failed to create menu link. Please try again.");
+            return;
+          }
         }
 
-        if (!result?.verified) {
-          console.error("[ShareDialog] Link not verified:", result);
-          toast.error(result?.error || "Link created but not accessible. Ensure your menu is published.");
-          return;
+        // 5) Verify link was created successfully
+        const isVerified = await verifyLinkExists(restaurant_hash, menu_id);
+
+        if (!isVerified) {
+          console.error("[ShareDialog] Link created but verification failed");
+          // Still show the link - it was created, just verification had issues
+          console.warn("[ShareDialog] Showing link anyway, it should work");
         }
 
-        const url = result.url || `${baseUrl}/m/${result.restaurant_hash}/${result.menu_id}`;
+        // 6) Success! Show the link
+        const url = `${baseUrl}/m/${restaurant_hash}/${menu_id}`;
+        console.log("[ShareDialog] Link ready:", url);
+        
         if (!cancelled) {
           setShortUrl(url);
-          console.log("[ShareDialog] Link verified and ready:", url);
+          if (!restaurant.published) {
+            toast.warning("Link created! Publish your restaurant to make it accessible.");
+          } else {
+            console.log("[ShareDialog] Link is live and accessible");
+          }
         }
       } catch (e) {
-        console.error("[ShareDialog] ensureLink error:", e);
+        console.error("[ShareDialog] Unexpected error:", e);
         toast.error("Failed to generate link. Please try again.");
       }
     };

@@ -30,11 +30,27 @@ class PublicMenuErrorBoundary extends Component<{ children: ReactNode }, { hasEr
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error('[PublicMenu] ERROR BOUNDARY CAUGHT:', error);
+    // CRITICAL LOGGING: This is where we catch React rendering errors
+    console.error('═══════════════════════════════════════════════════════');
+    console.error('[PublicMenu] ⚠️  ERROR BOUNDARY CAUGHT A RENDERING ERROR!');
+    console.error('═══════════════════════════════════════════════════════');
+    console.error('[PublicMenu] Error:', error);
     console.error('[PublicMenu] Error message:', error.message);
-    console.error('[PublicMenu] Error stack:', error.stack);
-    console.error('[PublicMenu] Component stack:', errorInfo.componentStack);
-    console.error('[PublicMenu] Full errorInfo:', errorInfo);
+    console.error('[PublicMenu] Error name:', error.name);
+    console.error('[PublicMenu] Error stack:');
+    console.error(error.stack);
+    console.error('[PublicMenu] Component stack:');
+    console.error(errorInfo.componentStack);
+    console.error('[PublicMenu] Full errorInfo:', JSON.stringify(errorInfo, null, 2));
+    console.error('═══════════════════════════════════════════════════════');
+    
+    // Try to extract more context
+    if (error instanceof TypeError) {
+      console.error('[PublicMenu] TypeError detected - likely accessing property of undefined/null');
+    }
+    if (error instanceof ReferenceError) {
+      console.error('[PublicMenu] ReferenceError detected - variable not defined');
+    }
   }
 
   render() {
@@ -45,6 +61,9 @@ class PublicMenuErrorBoundary extends Component<{ children: ReactNode }, { hasEr
             <h1 className="text-3xl font-bold">Unable to Load Menu</h1>
             <p className="text-muted-foreground text-lg">
               We couldn't load this menu. Please try refreshing the page.
+            </p>
+            <p className="text-sm text-red-500 mt-2">
+              Check browser console for detailed error information.
             </p>
             <Button onClick={() => window.location.reload()} className="mt-4">
               Refresh Page
@@ -62,8 +81,26 @@ const PublicMenuContent = ({ slugOverride }: PublicMenuProps = {}) => {
   const { slug: urlSlug } = useParams<{ slug: string }>();
   const slug = slugOverride || urlSlug;
   
+  // DEBUG: Log slug resolution
+  console.log('[PublicMenu] Slug resolution:', {
+    slugOverride,
+    urlSlug,
+    finalSlug: slug,
+    hasSlugOverride: !!slugOverride,
+    hasUrlSlug: !!urlSlug
+  });
+  
   // Step 1: Resolve restaurant first (resolve-first pattern)
   const { data: restaurant, isLoading: restaurantLoading, error: restaurantError, isError } = useRestaurant(slug || "");
+  
+  // DEBUG: Log restaurant query initialization
+  console.log('[PublicMenu] Restaurant query initialized:', {
+    slug,
+    enabled: !!slug,
+    loading: restaurantLoading,
+    hasData: !!restaurant,
+    hasError: isError
+  });
   
   // Step 2: Only fetch categories if restaurant exists and is published
   const { data: categories, error: categoriesError } = useCategories(restaurant?.id || "", {
@@ -280,30 +317,48 @@ const PublicMenuContent = ({ slugOverride }: PublicMenuProps = {}) => {
   const { data: ownerHasPremium, isLoading: premiumLoading } = useQuery({
     queryKey: ['owner-premium', restaurant?.owner_id],
     queryFn: async () => {
-      if (!restaurant?.owner_id) return false;
+      if (!restaurant?.owner_id) {
+        console.log('[PublicMenu] No owner_id, skipping premium check');
+        return false;
+      }
       
       try {
+        console.log('[PublicMenu] Checking premium status for owner:', restaurant.owner_id);
         const { data, error } = await supabase
           .rpc('has_premium_subscription', { user_id_param: restaurant.owner_id });
 
         if (error) {
+          console.error('[PublicMenu] Premium RPC error:', error);
+          // If RPC function doesn't exist, fail gracefully
+          if (error.message?.includes('function') || error.code === '42883') {
+            console.warn('[PublicMenu] has_premium_subscription RPC not found, defaulting to false');
+          }
           logger.error('Error checking premium status:', error);
           return false;
         }
 
+        console.log('[PublicMenu] Premium check result:', data);
         return data;
       } catch (err) {
+        console.error('[PublicMenu] Premium check exception:', err);
         logger.error('Premium check failed:', err);
         return false;
       }
     },
     enabled: !!restaurant?.owner_id && restaurant?.published === true,
     staleTime: 1000 * 60 * 10,
+    // CRITICAL: Don't let premium check errors crash the component
+    retry: false,
+    throwOnError: false,
   });
 
 
-  // Show upgrade prompt if owner doesn't have premium
+  // DISABLED: Premium gate temporarily disabled to allow all menus to show
+  // The premium check should happen at link CREATION time, not VIEW time
+  // If a link exists and restaurant is published, the menu should be viewable
+  /*
   if (!premiumLoading && !ownerHasPremium) {
+    console.log('[PublicMenu] Premium check would block menu, but gate is disabled');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30 p-4">
         <div className="max-w-md text-center space-y-6">
@@ -323,6 +378,15 @@ const PublicMenuContent = ({ slugOverride }: PublicMenuProps = {}) => {
         </div>
       </div>
     );
+  }
+  */
+  
+  // Log premium status but don't block menu
+  if (!premiumLoading) {
+    console.log('[PublicMenu] Premium status:', ownerHasPremium ? 'PREMIUM' : 'FREE');
+    if (!ownerHasPremium) {
+      console.warn('[PublicMenu] Owner does not have premium, but allowing menu to show');
+    }
   }
 
   // Log any data fetching errors

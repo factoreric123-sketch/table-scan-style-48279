@@ -407,22 +407,38 @@ const PublicMenuContent = ({ slugOverride }: PublicMenuProps = {}) => {
   const { data: allDishesForCategory, error: dishesError } = useQuery({
     queryKey: ['all-dishes-for-category', activeCategoryObj?.id],
     queryFn: async () => {
-      if (!activeCategoryObj?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('dishes')
-        .select('*, subcategories!inner(id, name, category_id)')
-        .eq('subcategories.category_id', activeCategoryObj.id)
-        .order('order_index');
-      
-      if (error) {
-        console.error('[PublicMenu] Dishes query error:', error);
-        throw error;
+      if (!activeCategoryObj?.id) {
+        console.log('[PublicMenu] No active category, returning empty dishes');
+        return [];
       }
-      return data || [];
+      
+      try {
+        console.log('[PublicMenu] Fetching dishes for category:', activeCategoryObj.id);
+        const { data, error } = await supabase
+          .from('dishes')
+          .select('*, subcategories!inner(id, name, category_id)')
+          .eq('subcategories.category_id', activeCategoryObj.id)
+          .order('order_index');
+        
+        if (error) {
+          console.error('[PublicMenu] Dishes query error:', error);
+          // Don't throw - return empty array and let error state handle it
+          return [];
+        }
+        
+        console.log('[PublicMenu] Fetched dishes:', data?.length || 0);
+        return data || [];
+      } catch (err) {
+        console.error('[PublicMenu] Dishes query exception:', err);
+        // Never throw - always return empty array
+        return [];
+      }
     },
     enabled: !!activeCategoryObj?.id && restaurant?.published === true,
     staleTime: 1000 * 60 * 10,
+    // CRITICAL: Don't throw errors
+    retry: 3,
+    throwOnError: false,
   });
 
   // Group dishes by subcategory

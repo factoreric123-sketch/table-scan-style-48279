@@ -24,9 +24,18 @@ export interface Restaurant {
 }
 
 export const useRestaurants = () => {
+  const { data } = useQuery({
+    queryKey: ['auth-session'],
+    queryFn: async () => supabase.auth.getSession(),
+  });
+
+  const userId = data?.data?.session?.user?.id;
+
   return useQuery({
-    queryKey: ["restaurants"],
+    queryKey: ["restaurants", userId],
     queryFn: async () => {
+      if (!userId) return [];
+      
       const { data, error } = await supabase
         .from("restaurants")
         .select("*")
@@ -35,6 +44,7 @@ export const useRestaurants = () => {
       if (error) throw error;
       return data as unknown as Restaurant[];
     },
+    enabled: !!userId,
     staleTime: 1000 * 60 * 2, // 2 minutes - restaurants don't change often
     gcTime: 1000 * 60 * 15, // 15 minutes cache
   });
@@ -159,8 +169,9 @@ export const useCreateRestaurant = () => {
     },
     onMutate: async (restaurant) => {
       // Optimistic update
-      await queryClient.cancelQueries({ queryKey: ["restaurants"] });
-      const previous = queryClient.getQueryData<Restaurant[]>(["restaurants"]);
+      const userId = restaurant.owner_id;
+      await queryClient.cancelQueries({ queryKey: ["restaurants", userId] });
+      const previous = queryClient.getQueryData<Restaurant[]>(["restaurants", userId]);
       
       // Optimistically add new restaurant to the list
       if (previous && restaurant.owner_id) {
@@ -176,7 +187,7 @@ export const useCreateRestaurant = () => {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
-        queryClient.setQueryData<Restaurant[]>(["restaurants"], [tempRestaurant, ...previous]);
+        queryClient.setQueryData<Restaurant[]>(["restaurants", restaurant.owner_id], [tempRestaurant, ...previous]);
       }
       
       return { previous };
@@ -187,8 +198,8 @@ export const useCreateRestaurant = () => {
     },
     onError: (error: Error, _variables, context) => {
       // Rollback on error
-      if (context?.previous) {
-        queryClient.setQueryData(["restaurants"], context.previous);
+      if (context?.previous && _variables.owner_id) {
+        queryClient.setQueryData(["restaurants", _variables.owner_id], context.previous);
       }
       toast.error(error.message || "Failed to create restaurant");
     },
@@ -248,18 +259,22 @@ export const useDeleteRestaurant = () => {
       if (error) throw error;
     },
     onMutate: async (id) => {
-      // Optimistic delete
-      await queryClient.cancelQueries({ queryKey: ["restaurants"] });
-      const previous = queryClient.getQueryData<Restaurant[]>(["restaurants"]);
+      // Get all restaurant query keys to update all user caches
+      const queries = queryClient.getQueriesData<Restaurant[]>({ queryKey: ["restaurants"] });
+      const contexts: any[] = [];
       
-      if (previous) {
-        queryClient.setQueryData<Restaurant[]>(
-          ["restaurants"],
-          previous.filter((r) => r.id !== id)
-        );
+      for (const [queryKey, previous] of queries) {
+        if (previous) {
+          await queryClient.cancelQueries({ queryKey });
+          queryClient.setQueryData<Restaurant[]>(
+            queryKey,
+            previous.filter((r) => r.id !== id)
+          );
+          contexts.push({ queryKey, previous });
+        }
       }
       
-      return { previous };
+      return { contexts };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["restaurants"] });
@@ -267,8 +282,10 @@ export const useDeleteRestaurant = () => {
     },
     onError: (error: Error, _id, context) => {
       // Rollback on error
-      if (context?.previous) {
-        queryClient.setQueryData(["restaurants"], context.previous);
+      if (context?.contexts) {
+        for (const { queryKey, previous } of context.contexts) {
+          queryClient.setQueryData(queryKey, previous);
+        }
       }
       toast.error(error.message || "Failed to delete restaurant");
     },

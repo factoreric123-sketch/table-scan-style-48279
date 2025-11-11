@@ -62,6 +62,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    // Clear all cached data when signing out
+    window.location.reload();
   };
 
   const refreshSession = async () => {

@@ -353,6 +353,38 @@ export const presetThemes: Theme[] = [
       cornerRadius: '0.75rem',
     },
   },
+  {
+    id: 'neo',
+    name: 'Neo',
+    isCustom: false,
+    colors: {
+      background: '0 0% 98%',
+      foreground: '220 13% 13%',
+      card: '0 0% 100%',
+      cardForeground: '220 13% 13%',
+      primary: '220 13% 13%',
+      primaryForeground: '0 0% 98%',
+      secondary: '220 13% 91%',
+      secondaryForeground: '220 13% 13%',
+      accent: '220 13% 13%',
+      accentForeground: '0 0% 98%',
+      muted: '220 13% 95%',
+      mutedForeground: '220 9% 46%',
+      border: '220 13% 91%',
+      input: '220 13% 91%',
+      ring: '220 13% 13%',
+      destructive: '0 84% 60%',
+      destructiveForeground: '0 0% 98%',
+    },
+    fonts: {
+      heading: 'Inter',
+      body: 'Inter',
+    },
+    visual: {
+      mode: 'light',
+      cornerRadius: '0.75rem',
+    },
+  },
 ];
 
 export const getDefaultTheme = (): Theme => presetThemes[0];

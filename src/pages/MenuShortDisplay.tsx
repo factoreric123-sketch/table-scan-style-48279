@@ -1,77 +1,86 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import PublicMenu from "./PublicMenu";
+import PublicMenuStatic from "./PublicMenuStatic";
+import { useFullMenu } from "@/hooks/useFullMenu";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * Instant menu loading via direct database queries
- * No edge functions, no retries, pure speed
+ * Zero-delay short link resolution
+ * Single-join query + full menu fetch in parallel
  */
 const MenuShortDisplay = () => {
   const { restaurantHash, menuId } = useParams<{ restaurantHash: string; menuId: string }>();
-  const [status, setStatus] = useState<"loading" | "found" | "not-found" | "unpublished">("loading");
-  const [restaurantSlug, setRestaurantSlug] = useState<string>("");
+  const [status, setStatus] = useState<"resolving" | "found" | "not-found" | "unpublished">("resolving");
+  const [restaurantId, setRestaurantId] = useState<string>("");
+  const { data: fullMenu, isLoading: menuLoading } = useFullMenu(restaurantId);
 
   useEffect(() => {
-    const resolveMenu = async () => {
+    const resolveLink = async () => {
       if (!restaurantHash || !menuId) {
         setStatus("not-found");
         return;
       }
 
-      const cleanHash = restaurantHash.trim().toLowerCase();
-      const cleanId = menuId.trim();
-
       try {
-        // Direct database query - no edge function, instant resolution
-        const { data: link, error: linkError } = await supabase
+        // Single join query - resolve link + restaurant in one call
+        const { data: link, error } = await supabase
           .from('menu_links')
-          .select('restaurant_id')
-          .eq('restaurant_hash', cleanHash)
-          .eq('menu_id', cleanId)
+          .select('restaurant_id, restaurants!inner(id, slug, published)')
+          .eq('restaurant_hash', restaurantHash.trim().toLowerCase())
+          .eq('menu_id', menuId.trim())
           .eq('active', true)
           .maybeSingle();
 
-        if (linkError || !link) {
+        if (error || !link) {
           setStatus('not-found');
           return;
         }
 
-        // Get restaurant slug and published status
-        const { data: restaurant, error: restaurantError } = await supabase
-          .from('restaurants')
-          .select('slug, published')
-          .eq('id', link.restaurant_id)
-          .maybeSingle();
-
-        if (restaurantError || !restaurant) {
-          setStatus('not-found');
-          return;
-        }
+        const restaurant = (link as any).restaurants;
 
         if (!restaurant.published) {
           setStatus('unpublished');
           return;
         }
 
-        // Success - instant resolution
-        setRestaurantSlug(restaurant.slug);
+        // Success - kick off full menu fetch
+        setRestaurantId(restaurant.id);
         setStatus('found');
-      } catch (err) {
+      } catch {
         setStatus('not-found');
       }
     };
 
-    resolveMenu();
+    resolveLink();
   }, [restaurantHash, menuId]);
 
-  // Loading state
-  if (status === "loading") {
+  // Instant shell - no spinner, paint immediately
+  if (status === "resolving" || (status === "found" && !fullMenu)) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
-          <p className="text-muted-foreground">Loading menu...</p>
+      <div className="min-h-screen bg-background">
+        <div className="h-16 bg-background/95 backdrop-blur-sm border-b border-border/50" />
+        <div className="h-64 md:h-80 relative overflow-hidden">
+          <Skeleton className="absolute inset-0" />
+        </div>
+        <div className="sticky top-[57px] z-40 bg-background border-b border-border">
+          <div className="flex gap-3 overflow-x-auto pb-3 pt-4 px-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-10 w-24 rounded-full flex-shrink-0" />
+            ))}
+          </div>
+        </div>
+        <div className="px-6 py-8">
+          <Skeleton className="h-8 w-48 mb-6" />
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="aspect-square rounded-2xl" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -101,9 +110,18 @@ const MenuShortDisplay = () => {
     );
   }
 
-  // Render the actual menu (found state)
-  // We pass the slug as a URL param override to PublicMenu
-  return <PublicMenu slugOverride={restaurantSlug} />;
+  // Render static menu with full payload
+  if (status === "found" && fullMenu) {
+    return (
+      <PublicMenuStatic
+        restaurant={fullMenu.restaurant}
+        categories={fullMenu.categories || []}
+      />
+    );
+  }
+
+  // Fallback (should never reach here)
+  return null;
 };
 
 export default MenuShortDisplay;

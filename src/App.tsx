@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Preconnect } from "@/components/Preconnect";
 import Home from "./pages/Home";
 import Demo from "./pages/Demo";
 import Auth from "./pages/Auth";
@@ -51,6 +52,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
+          <Preconnect />
           <Toaster />
           <Sonner />
           <BrowserRouter>

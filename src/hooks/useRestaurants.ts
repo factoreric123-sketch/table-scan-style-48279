@@ -130,7 +130,7 @@ export const useRestaurantById = (id: string) => {
       return data as unknown as Restaurant;
     },
     enabled: !!id,
-    staleTime: 1000 * 30, // 30 seconds - editor needs fresher data
+    staleTime: 0, // Always refetch to get latest settings instantly
     gcTime: 1000 * 60 * 10, // 10 minutes cache
   });
 };

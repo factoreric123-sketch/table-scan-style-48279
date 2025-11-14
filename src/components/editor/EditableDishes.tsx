@@ -14,12 +14,14 @@ interface EditableDishesProps {
   dishes: Dish[];
   subcategoryId: string;
   previewMode: boolean;
+  restaurant?: any;
 }
 
 export const EditableDishes = ({
   dishes,
   subcategoryId,
   previewMode,
+  restaurant,
 }: EditableDishesProps) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -121,7 +123,18 @@ export const EditableDishes = ({
     }));
 
     return (
-      <MenuGrid dishes={dishCards} sectionTitle="" />
+      <MenuGrid 
+        key={restaurant?.updated_at} // Force re-render when settings change
+        dishes={dishCards} 
+        sectionTitle=""
+        showPrice={restaurant?.show_prices !== false}
+        showImage={restaurant?.show_images !== false}
+        gridColumns={restaurant?.grid_columns || 2}
+        layoutDensity={restaurant?.layout_density || 'spacious'}
+        fontSize={restaurant?.menu_font_size || 'medium'}
+        imageSize={restaurant?.image_size || 'large'}
+        badgeColors={restaurant?.badge_colors}
+      />
     );
   }
 

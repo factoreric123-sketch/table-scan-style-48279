@@ -47,7 +47,7 @@ const Editor = () => {
     if (previewMode && restaurantId) {
       const interval = setInterval(() => {
         refetchRestaurant();
-      }, 1000); // Check for updates every second in preview mode
+      }, 200); // Check for updates every 200ms in preview mode for instant feel
       return () => clearInterval(interval);
     }
   }, [previewMode, restaurantId, refetchRestaurant]);
@@ -475,6 +475,7 @@ const Editor = () => {
                 dishes={filteredSubcategoryDishes}
                 subcategoryId={subcategory.id}
                 previewMode={previewMode}
+                restaurant={restaurant}
               />
             </div>
           );

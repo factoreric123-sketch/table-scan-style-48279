@@ -27,11 +27,9 @@ interface SortableItemProps {
   id: string;
   name: string;
   price: string;
-  draftValue?: string;
   onUpdate: (id: string, field: "name" | "price", value: string) => void;
   onDelete: (id: string) => void;
   isSaving?: boolean;
-  isDeleting?: boolean;
 }
 
 const SortableItem = ({ id, name, price, onUpdate, onDelete, isSaving }: SortableItemProps) => {
@@ -88,12 +86,18 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
   
   const updateDish = useUpdateDish();
   
+  const [localOptions, setLocalOptions] = useState<DishOption[]>([]);
+  const [localModifiers, setLocalModifiers] = useState<DishModifier[]>([]);
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const updateTimers = useRef<{ [key: string]: any }>({});
   
-  
-  // Also sync whenever query data updates (after mutations)
-  
+  // Sync when dialog opens or data changes
+  useEffect(() => {
+    if (open) {
+      setLocalOptions(options);
+      setLocalModifiers(modifiers);
+    }
+  }, [open, options, modifiers]);
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -175,7 +179,17 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
   }, [updateOption, updateModifier]);
 
   const handleAddOption = () => {
-    const newOrderIndex = options.length;
+    const newOrderIndex = localOptions.length;
+    const tempId = generateTempId();
+    const tempOption: DishOption = {
+      id: tempId,
+      dish_id: dishId,
+      name: "Size",
+      price: "0.00",
+      order_index: newOrderIndex,
+      created_at: new Date().toISOString(),
+    };
+    setLocalOptions([...localOptions, tempOption]);
     createOption.mutate({
       dish_id: dishId,
       name: "Size",
@@ -185,31 +199,54 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
   };
 
   const handleUpdateOption = (id: string, field: "name" | "price", value: string) => {
-    debouncedUpdate(id, field, value, "option");
+    setLocalOptions(localOptions.map(opt => 
+      opt.id === id ? { ...opt, [field]: value } : opt
+    ));
+    
+    if (!id.startsWith("temp-")) {
+      debouncedUpdate(id, field, value, "option");
+    }
   };
 
   const handleDeleteOption = (id: string) => {
-    deleteOption.mutate({ id, dishId });
+    setLocalOptions(localOptions.filter(opt => opt.id !== id));
+    if (!id.startsWith("temp-")) {
+      deleteOption.mutate({ id, dishId });
+    }
   };
 
   const handleOptionDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = options.findIndex((opt) => opt.id === active.id);
-    const newIndex = options.findIndex((opt) => opt.id === over.id);
+    const oldIndex = localOptions.findIndex((opt) => opt.id === active.id);
+    const newIndex = localOptions.findIndex((opt) => opt.id === over.id);
 
-    const reordered = arrayMove(options, oldIndex, newIndex).map((opt, idx) => ({
+    const reordered = arrayMove(localOptions, oldIndex, newIndex).map((opt, idx) => ({
       ...opt,
       order_index: idx,
     }));
 
-    queryClient.setQueryData<DishOption[]>(["dish-options", dishId], reordered);
-    updateOptionsOrder.mutate({ options: reordered, dishId });
+    setLocalOptions(reordered);
+    
+    const realOptions = reordered.filter(opt => !opt.id.startsWith("temp-"));
+    if (realOptions.length > 0) {
+      updateOptionsOrder.mutate({ options: realOptions, dishId });
+    }
   };
 
   const handleAddModifier = () => {
-    const newOrderIndex = modifiers.length;
+    const newOrderIndex = localModifiers.length;
+    const tempId = generateTempId();
+    const tempModifier: DishModifier = {
+      id: tempId,
+      dish_id: dishId,
+      name: "Add-on",
+      price: "0.00",
+      order_index: newOrderIndex,
+      created_at: new Date().toISOString(),
+    };
+    setLocalModifiers([...localModifiers, tempModifier]);
     createModifier.mutate({
       dish_id: dishId,
       name: "Add-on",
@@ -219,27 +256,40 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
   };
 
   const handleUpdateModifier = (id: string, field: "name" | "price", value: string) => {
-    debouncedUpdate(id, field, value, "modifier");
+    setLocalModifiers(localModifiers.map(mod => 
+      mod.id === id ? { ...mod, [field]: value } : mod
+    ));
+    
+    if (!id.startsWith("temp-")) {
+      debouncedUpdate(id, field, value, "modifier");
+    }
   };
 
   const handleDeleteModifier = (id: string) => {
-    deleteModifier.mutate({ id, dishId });
+    setLocalModifiers(localModifiers.filter(mod => mod.id !== id));
+    if (!id.startsWith("temp-")) {
+      deleteModifier.mutate({ id, dishId });
+    }
   };
 
   const handleModifierDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = modifiers.findIndex((mod) => mod.id === active.id);
-    const newIndex = modifiers.findIndex((mod) => mod.id === over.id);
+    const oldIndex = localModifiers.findIndex((mod) => mod.id === active.id);
+    const newIndex = localModifiers.findIndex((mod) => mod.id === over.id);
 
-    const reordered = arrayMove(modifiers, oldIndex, newIndex).map((mod, idx) => ({
+    const reordered = arrayMove(localModifiers, oldIndex, newIndex).map((mod, idx) => ({
       ...mod,
       order_index: idx,
     }));
 
-    queryClient.setQueryData<DishModifier[]>(["dish-modifiers", dishId], reordered);
-    updateModifiersOrder.mutate({ modifiers: reordered, dishId });
+    setLocalModifiers(reordered);
+    
+    const realModifiers = reordered.filter(mod => !mod.id.startsWith("temp-"));
+    if (realModifiers.length > 0) {
+      updateModifiersOrder.mutate({ modifiers: realModifiers, dishId });
+    }
   };
 
   return (
@@ -274,11 +324,11 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
                 </div>
                 <p className="text-sm text-muted-foreground">Different sizes or variants (e.g., Small, Medium, Large)</p>
                 
-                {options.length > 0 ? (
+                {localOptions.length > 0 ? (
                   <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleOptionDragEnd}>
-                    <SortableContext items={options.map(o => o.id)} strategy={verticalListSortingStrategy}>
+                    <SortableContext items={localOptions.map(o => o.id)} strategy={verticalListSortingStrategy}>
                       <div className="space-y-2">
-                        {options.map((option) => (
+                        {localOptions.map((option) => (
                           <SortableItem
                             key={option.id}
                             id={option.id}
@@ -307,11 +357,11 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
                 </div>
                 <p className="text-sm text-muted-foreground">Optional extras (e.g., Cheese, Egg, Avocado)</p>
                 
-                {modifiers.length > 0 ? (
+                {localModifiers.length > 0 ? (
                   <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleModifierDragEnd}>
-                    <SortableContext items={modifiers.map(m => m.id)} strategy={verticalListSortingStrategy}>
+                    <SortableContext items={localModifiers.map(m => m.id)} strategy={verticalListSortingStrategy}>
                       <div className="space-y-2">
-                        {modifiers.map((modifier) => (
+                        {localModifiers.map((modifier) => (
                           <SortableItem
                             key={modifier.id}
                             id={modifier.id}

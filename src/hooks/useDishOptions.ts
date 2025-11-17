@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { generateTempId } from "@/lib/utils/uuid";
 
 export interface DishOption {
   id: string;
@@ -28,13 +27,7 @@ const invalidateFullMenuCache = async (dishId: string, queryClient: any) => {
 
   if (dish?.subcategories?.categories?.restaurant_id) {
     const restaurantId = dish.subcategories.categories.restaurant_id;
-    
-    // Only invalidate full-menu, don't refetch immediately
-    queryClient.invalidateQueries({ 
-      queryKey: ["full-menu", restaurantId],
-      refetchType: 'none'
-    });
-    
+    queryClient.invalidateQueries({ queryKey: ["full-menu", restaurantId] });
     localStorage.removeItem(`fullMenu:${restaurantId}`);
   }
 };
@@ -83,17 +76,7 @@ export const useCreateDishOption = () => {
     onMutate: async (option) => {
       await queryClient.cancelQueries({ queryKey: ["dish-options", option.dish_id] });
       const previous = queryClient.getQueryData<DishOption[]>(["dish-options", option.dish_id]);
-      
-      // Add optimistic item with temporary ID
-      if (previous) {
-        const tempOption: DishOption = {
-          id: generateTempId(),
-          ...option,
-          created_at: new Date().toISOString(),
-        };
-        queryClient.setQueryData<DishOption[]>(["dish-options", option.dish_id], [...previous, tempOption]);
-      }
-      
+      // Do not add optimistic temp rows to avoid duplicates/glitches across views
       return { previous, dishId: option.dish_id };
     },
     onSuccess: async (_, variables) => {

@@ -189,7 +189,10 @@ const DishCard = memo(({
                   if (prices.length > 0) {
                     // Get unique prices
                     const uniquePrices = Array.from(new Set(prices));
-                    const priceRange = uniquePrices.map(p => `$${p.toFixed(0)}`).join(' / ');
+                    const priceRange = uniquePrices.map(p => {
+                      // Show decimals only if not a whole number
+                      return p % 1 === 0 ? `$${p.toFixed(0)}` : `$${p.toFixed(2)}`;
+                    }).join(' / ');
                     const addOns = dish.modifiers && dish.modifiers.length > 0 ? ' + Add-ons' : '';
                     return priceRange + addOns;
                   }

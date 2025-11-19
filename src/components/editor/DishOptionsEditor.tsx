@@ -89,6 +89,7 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
   const [localOptions, setLocalOptions] = useState<DishOption[]>([]);
   const [localModifiers, setLocalModifiers] = useState<DishModifier[]>([]);
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+  const [isClosing, setIsClosing] = useState(false);
   const updateTimers = useRef<{ [key: string]: any }>({});
   
   // Sync only when dialog opens, not on every refetch
@@ -194,13 +195,37 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
       order_index: newOrderIndex,
       created_at: new Date().toISOString(),
     };
-    setLocalOptions([...localOptions, tempOption]);
-    createOption.mutate({
-      dish_id: dishId,
-      name: "Size",
-      price: "0.00",
-      order_index: newOrderIndex,
-    });
+    setLocalOptions(prev => [...prev, tempOption]);
+    
+    createOption.mutate(
+      {
+        dish_id: dishId,
+        name: "Size",
+        price: "0.00",
+        order_index: newOrderIndex,
+      },
+      {
+        onSuccess: (created) => {
+          // Replace temp row with real DB row, preserving any user edits
+          setLocalOptions(prev =>
+            prev.map(opt =>
+              opt.id === tempId
+                ? {
+                    ...created,
+                    name: opt.name,
+                    price: opt.price,
+                    order_index: opt.order_index,
+                  }
+                : opt
+            )
+          );
+        },
+        onError: () => {
+          // Remove temp entry on error
+          setLocalOptions(prev => prev.filter(opt => opt.id !== tempId));
+        },
+      }
+    );
   };
 
   const handleUpdateOption = (id: string, field: "name" | "price", value: string) => {
@@ -251,13 +276,37 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
       order_index: newOrderIndex,
       created_at: new Date().toISOString(),
     };
-    setLocalModifiers([...localModifiers, tempModifier]);
-    createModifier.mutate({
-      dish_id: dishId,
-      name: "Add-on",
-      price: "0.00",
-      order_index: newOrderIndex,
-    });
+    setLocalModifiers(prev => [...prev, tempModifier]);
+    
+    createModifier.mutate(
+      {
+        dish_id: dishId,
+        name: "Add-on",
+        price: "0.00",
+        order_index: newOrderIndex,
+      },
+      {
+        onSuccess: (created) => {
+          // Replace temp row with real DB row, preserving any user edits
+          setLocalModifiers(prev =>
+            prev.map(mod =>
+              mod.id === tempId
+                ? {
+                    ...created,
+                    name: mod.name,
+                    price: mod.price,
+                    order_index: mod.order_index,
+                  }
+                : mod
+            )
+          );
+        },
+        onError: () => {
+          // Remove temp entry on error
+          setLocalModifiers(prev => prev.filter(mod => mod.id !== tempId));
+        },
+      }
+    );
   };
 
   const handleUpdateModifier = (id: string, field: "name" | "price", value: string) => {
@@ -389,8 +438,33 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
         </div>
         
         <DialogFooter>
-          <Button onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
-            Save & Close
+          <Button 
+            onClick={() => {
+              setIsClosing(true);
+              
+              // Flush any pending debounced updates
+              Object.values(updateTimers.current).forEach(timer => {
+                if (timer) clearTimeout(timer);
+              });
+              updateTimers.current = {};
+              
+              // Wait briefly for any in-flight mutations to complete
+              setTimeout(() => {
+                onOpenChange(false);
+                setIsClosing(false);
+              }, 100);
+            }} 
+            disabled={isClosing}
+            className="w-full sm:w-auto"
+          >
+            {isClosing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save & Close"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

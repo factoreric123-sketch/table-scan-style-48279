@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -387,6 +387,12 @@ export const DishOptionsEditor = ({ dishId, dishName, hasOptions, open, onOpenCh
             </>
           )}
         </div>
+        
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+            Save & Close
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

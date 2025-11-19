@@ -364,6 +364,9 @@ const PublicMenuStatic = ({ restaurant, categories, onCategoryChange }: PublicMe
             isVegetarian: dish.is_vegetarian,
             isVegan: dish.is_vegan,
             isSpicy: dish.is_spicy,
+            hasOptions: dish.has_options || (dish.options?.length ?? 0) > 0,
+            options: dish.options || [],
+            modifiers: dish.modifiers || [],
           }));
 
           // Render first subcategory immediately, defer others

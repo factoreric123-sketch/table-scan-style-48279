@@ -254,7 +254,6 @@ export const SpreadsheetRow = ({ dish, isSelected, onSelect, style }: Spreadshee
         dishId={dish.id}
         dishName={dish.name}
         hasOptions={dish.has_options}
-        subcategoryId={dish.subcategory_id}
         open={showOptionsEditor}
         onOpenChange={setShowOptionsEditor}
       />

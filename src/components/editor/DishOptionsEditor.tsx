@@ -225,7 +225,6 @@ export function DishOptionsEditor({
   // Store initial state for diffing on save
   const initialOptionsRef = useRef<EditableDishOption[]>([]);
   const initialModifiersRef = useRef<EditableDishModifier[]>([]);
-  const dialogOpenedRef = useRef(false);
 
   // Constants
   const MAX_OPTIONS = 50;
@@ -254,7 +253,7 @@ export function DishOptionsEditor({
 
   // Initialize local state when dialog opens with loading state
   useEffect(() => {
-    if (open && !dialogOpenedRef.current) {
+    if (open) {
       setIsInitializing(true);
       
       const editableOptions: EditableDishOption[] = options.map(opt => ({
@@ -271,16 +270,13 @@ export function DishOptionsEditor({
       setLocalModifiers(editableModifiers);
       setLocalHasOptions(initialHasOptions);
 
-      // Use structuredClone for faster deep cloning
+      // Use structuredClone for faster deep cloning - ALWAYS update refs when dialog opens
       initialOptionsRef.current = structuredClone(editableOptions);
       initialModifiersRef.current = structuredClone(editableModifiers);
-
-      dialogOpenedRef.current = true;
       
       // Small delay to ensure smooth rendering
       setTimeout(() => setIsInitializing(false), 50);
-    } else if (!open) {
-      dialogOpenedRef.current = false;
+    } else {
       setIsDirty(false);
     }
   }, [open, options, modifiers, initialHasOptions]);

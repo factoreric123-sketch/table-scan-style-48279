@@ -11,32 +11,6 @@ export interface DishOption {
   created_at: string;
 }
 
-// Helper to check if a string is a valid UUID
-const isUuid = (id: string): boolean => {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-};
-
-// Helper to invalidate full menu cache when options change
-const invalidateFullMenuCache = async (dishId: string, queryClient: any) => {
-  const { data: dish } = await supabase
-    .from("dishes")
-    .select(`
-      subcategory_id,
-      subcategories!inner(
-        category_id,
-        categories!inner(restaurant_id)
-      )
-    `)
-    .eq("id", dishId)
-    .single();
-
-  if (dish?.subcategories?.categories?.restaurant_id) {
-    const restaurantId = dish.subcategories.categories.restaurant_id;
-    queryClient.invalidateQueries({ queryKey: ["full-menu", restaurantId] });
-    localStorage.removeItem(`fullMenu:${restaurantId}`);
-  }
-};
-
 export const useDishOptions = (dishId: string) => {
   return useQuery({
     queryKey: ["dish-options", dishId],
@@ -50,11 +24,9 @@ export const useDishOptions = (dishId: string) => {
       if (error) throw error;
       return data as DishOption[];
     },
-    enabled: !!dishId && isUuid(dishId),
-    staleTime: 5 * 60 * 1000, // 5 minutes for better performance
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnMount: false, // Don't refetch on mount if data exists
+    enabled: !!dishId,
+    staleTime: 1000 * 60, // 1 minute
+    gcTime: 1000 * 60 * 10, // 10 minutes cache
     placeholderData: (prev) => prev,
   });
 };
@@ -64,6 +36,7 @@ export const useCreateDishOption = () => {
 
   return useMutation({
     mutationFn: async (option: Omit<DishOption, "id" | "created_at">) => {
+      // Normalize price - accept various formats
       let normalizedPrice = option.price.replace(/[^0-9.]/g, "");
       if (normalizedPrice && !normalizedPrice.includes(".")) {
         normalizedPrice += ".00";
@@ -83,13 +56,20 @@ export const useCreateDishOption = () => {
     onMutate: async (option) => {
       await queryClient.cancelQueries({ queryKey: ["dish-options", option.dish_id] });
       const previous = queryClient.getQueryData<DishOption[]>(["dish-options", option.dish_id]);
-      // Do not add optimistic temp rows to avoid duplicates/glitches across views
+      
+      if (previous) {
+        const tempOption: DishOption = {
+          id: `temp-${Date.now()}`,
+          ...option,
+          created_at: new Date().toISOString(),
+        };
+        queryClient.setQueryData<DishOption[]>(["dish-options", option.dish_id], [...previous, tempOption]);
+      }
+      
       return { previous, dishId: option.dish_id };
     },
-    onSuccess: async (_, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["dish-options", variables.dish_id] });
-      queryClient.invalidateQueries({ queryKey: ["dishes"] });
-      await invalidateFullMenuCache(variables.dish_id, queryClient);
       toast.success("Option added");
     },
     onError: (_error, _variables, context) => {
@@ -105,21 +85,9 @@ export const useUpdateDishOption = () => {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<DishOption> }) => {
-      // Normalize price if provided to prevent resets/glitches
-      const payload: Partial<DishOption> = { ...updates };
-      if (typeof updates.price === "string") {
-        let normalizedPrice = updates.price.replace(/[^0-9.]/g, "");
-        if (normalizedPrice && !normalizedPrice.includes(".")) {
-          normalizedPrice += ".00";
-        } else if (normalizedPrice.split(".")[1]?.length === 1) {
-          normalizedPrice += "0";
-        }
-        payload.price = normalizedPrice || "0.00";
-      }
-
       const { data, error } = await supabase
         .from("dish_options")
-        .update(payload)
+        .update(updates)
         .eq("id", id)
         .select()
         .single();
@@ -145,10 +113,9 @@ export const useUpdateDishOption = () => {
         return { previous, dishId: option.dish_id };
       }
     },
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["dish-options", data.dish_id] });
       queryClient.invalidateQueries({ queryKey: ["dishes"] });
-      await invalidateFullMenuCache(data.dish_id, queryClient);
     },
     onError: (_error, _variables, context) => {
       if (context?.previous && context.dishId) {
@@ -184,10 +151,9 @@ export const useDeleteDishOption = () => {
       
       return { previous, dishId };
     },
-    onSuccess: async (_, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["dish-options", variables.dishId] });
       queryClient.invalidateQueries({ queryKey: ["dishes"] });
-      await invalidateFullMenuCache(variables.dishId, queryClient);
       toast.success("Option deleted");
     },
     onError: (_error, _variables, context) => {
@@ -230,9 +196,8 @@ export const useUpdateDishOptionsOrder = () => {
         queryClient.setQueryData(["dish-options", context.dishId], context.previousOptions);
       }
     },
-    onSettled: async (_, __, variables) => {
+    onSettled: (_, __, variables) => {
       queryClient.invalidateQueries({ queryKey: ["dish-options", variables.dishId] });
-      await invalidateFullMenuCache(variables.dishId, queryClient);
     },
   });
 };

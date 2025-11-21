@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useCreateDish, useUpdateDishesOrder, type Dish } from "@/hooks/useDishes";
 import { useImageUpload } from "@/hooks/useImageUpload";
-import { useSubcategoryDishesWithOptions } from "@/hooks/useSubcategoryDishesWithOptions";
 import MenuGrid from "@/components/MenuGrid";
 import DishCard from "@/components/DishCard";
 import { toast } from "sonner";
@@ -28,12 +27,6 @@ export const EditableDishes = ({
   const [isReady, setIsReady] = useState(false);
   const createDish = useCreateDish();
   const updateDishesOrder = useUpdateDishesOrder();
-  
-  // Fetch options and modifiers for preview mode
-  const { data: dishesWithOptions } = useSubcategoryDishesWithOptions(
-    dishes,
-    previewMode
-  );
 
   // Prevent flicker by ensuring content is ready
   useState(() => {
@@ -110,36 +103,24 @@ export const EditableDishes = ({
   }
 
   if (previewMode) {
-    // Use dishes with options/modifiers if available, otherwise use base dishes
-    const dishesData = dishesWithOptions || dishes;
-    
-    const dishCards = dishesData.map((dish) => {
-      const dishWithOptions = dish as any;
-      const hasOptionsArray = Array.isArray(dishWithOptions.options);
-      const hasModifiersArray = Array.isArray(dishWithOptions.modifiers);
-      
-      return {
-        id: dish.id,
-        name: dish.name,
-        description: dish.description || "",
-        price: dish.price,
-        image: dish.image_url || "",
-        isNew: dish.is_new,
-        isSpecial: dish.is_special,
-        isPopular: dish.is_popular,
-        isChefRecommendation: dish.is_chef_recommendation,
-        category: "",
-        subcategory: "",
-        allergens: dish.allergens || undefined,
-        calories: dish.calories || undefined,
-        isVegetarian: dish.is_vegetarian,
-        isVegan: dish.is_vegan,
-        isSpicy: dish.is_spicy,
-        hasOptions: dish.has_options || (hasOptionsArray && dishWithOptions.options.length > 0),
-        options: hasOptionsArray ? dishWithOptions.options : undefined,
-        modifiers: hasModifiersArray ? dishWithOptions.modifiers : undefined,
-      };
-    });
+    const dishCards = dishes.map((dish) => ({
+      id: dish.id,
+      name: dish.name,
+      description: dish.description || "",
+      price: dish.price,
+      image: dish.image_url || "",
+      isNew: dish.is_new,
+      isSpecial: dish.is_special,
+      isPopular: dish.is_popular,
+      isChefRecommendation: dish.is_chef_recommendation,
+      category: "",
+      subcategory: "",
+      allergens: dish.allergens || undefined,
+      calories: dish.calories || undefined,
+      isVegetarian: dish.is_vegetarian,
+      isVegan: dish.is_vegan,
+      isSpicy: dish.is_spicy,
+    }));
 
     return (
       <MenuGrid 

@@ -45,9 +45,6 @@ const MenuGrid = memo(({
       isVegetarian: dish.isVegetarian,
       isVegan: dish.isVegan,
       isSpicy: dish.isSpicy,
-      hasOptions: dish.hasOptions,
-      options: dish.options,
-      modifiers: dish.modifiers,
     });
   }, []);
 

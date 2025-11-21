@@ -3,16 +3,36 @@ import { supabase } from "@/integrations/supabase/client";
 import type { DishOption } from "./useDishOptions";
 import type { DishModifier } from "./useDishModifiers";
 
-// Client-side price normalization for instant feedback
-export const normalizePrice = (price: string): string => {
-  let normalized = price.replace(/[^0-9.]/g, "");
-  if (normalized && !normalized.includes(".")) {
-    normalized += ".00";
-  } else if (normalized.split(".")[1]?.length === 1) {
-    normalized += "0";
-  }
-  return normalized || "0.00";
-};
+// Client-side price normalization with cache for instant feedback
+export const normalizePrice = (() => {
+  const cache = new Map<string, string>();
+  
+  return (price: string): string => {
+    if (cache.has(price)) return cache.get(price)!;
+    
+    let normalized = "";
+    let hasDecimal = false;
+    
+    for (const char of price) {
+      if (char >= '0' && char <= '9') {
+        normalized += char;
+      } else if (char === '.' && !hasDecimal) {
+        normalized += char;
+        hasDecimal = true;
+      }
+    }
+    
+    if (normalized && !hasDecimal) {
+      normalized += ".00";
+    } else if (normalized.split(".")[1]?.length === 1) {
+      normalized += "0";
+    }
+    
+    const result = normalized || "0.00";
+    cache.set(price, result);
+    return result;
+  };
+})();
 
 // Helper to get restaurant ID from dish ID for cache invalidation
 const getRestaurantIdFromDish = async (dishId: string): Promise<string | null> => {
@@ -31,21 +51,35 @@ const getRestaurantIdFromDish = async (dishId: string): Promise<string | null> =
   return dish?.subcategories?.categories?.restaurant_id || null;
 };
 
+// Async localStorage operation for non-blocking execution
+const clearCacheAsync = (restaurantId: string) => {
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      localStorage.removeItem(`fullMenu:${restaurantId}`);
+    });
+  } else {
+    setTimeout(() => {
+      localStorage.removeItem(`fullMenu:${restaurantId}`);
+    }, 0);
+  }
+};
+
 // Single cache invalidation function - called ONCE after all mutations
 export const invalidateAllCaches = async (dishId: string, queryClient: any) => {
   const restaurantId = await getRestaurantIdFromDish(dishId);
   
   if (restaurantId) {
-    // Batch all invalidations together
+    // Batch all invalidations together - invalidate ALL queries that might show this dish
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["dish-options", dishId] }),
       queryClient.invalidateQueries({ queryKey: ["dish-modifiers", dishId] }),
       queryClient.invalidateQueries({ queryKey: ["dishes"] }),
+      queryClient.invalidateQueries({ queryKey: ["subcategory-dishes-with-options"] }), // Preview uses this!
       queryClient.invalidateQueries({ queryKey: ["full-menu", restaurantId] }),
     ]);
     
-    // Clear localStorage cache
-    localStorage.removeItem(`fullMenu:${restaurantId}`);
+    // Clear localStorage cache asynchronously
+    clearCacheAsync(restaurantId);
   }
 };
 

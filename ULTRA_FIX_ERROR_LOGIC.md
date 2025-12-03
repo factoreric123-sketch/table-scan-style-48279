@@ -10,7 +10,7 @@
 
 ---
 
-## Critical Bug 
+## Critical Bug Found
 
 ### Before (WRONG):
 ```typescript

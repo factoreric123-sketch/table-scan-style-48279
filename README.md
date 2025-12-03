@@ -1,73 +1,139 @@
-# Welcome to your Lovable project
+# Digital Restaurant Menu Platform
 
-## Project info
+A modern, full-featured digital menu platform for restaurants built with React, TypeScript, and Supabase.
 
-**URL**: https://lovable.dev/projects/1df200de-2f67-47b2-bd44-eb4e08ff6bf5
+## Project Overview
 
-## How can I edit this code?
+This platform allows restaurants to create beautiful, interactive digital menus that can be accessed via QR codes or direct links. Features include menu management, pricing tiers, analytics, and more.
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React 18 with TypeScript
+- **Build Tool**: Vite
+- **UI Components**: shadcn/ui + Radix UI
+- **Styling**: Tailwind CSS
+- **Backend**: Supabase (Database, Auth, Storage, Edge Functions)
+- **State Management**: TanStack Query (React Query)
+- **Routing**: React Router v6
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1df200de-2f67-47b2-bd44-eb4e08ff6bf5) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js (v18 or higher recommended) - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- npm or yarn package manager
+- Supabase account and project
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
+1. Clone the repository:
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+2. Install dependencies:
+```sh
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+3. Configure environment variables:
+Create a `.env` file in the root directory with your Supabase credentials:
+```
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+VITE_SUPABASE_PROJECT_ID=your_project_id
+```
+
+4. Start the development server:
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Available Scripts
 
-**Use GitHub Codespaces**
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Build for production
+- `npm run build:dev` - Build with development mode
+- `npm run preview` - Preview production build locally
+- `npm run lint` - Run ESLint
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Project Structure
 
-## What technologies are used for this project?
+```
+/workspace/
+├── src/
+│   ├── components/     # React components
+│   ├── pages/         # Route pages
+│   ├── hooks/         # Custom React hooks
+│   ├── lib/           # Utility libraries and Supabase client
+│   ├── integrations/  # Third-party integrations
+│   └── main.tsx       # Application entry point
+├── supabase/
+│   ├── functions/     # Edge Functions
+│   └── migrations/    # Database migrations
+├── public/            # Static assets
+└── index.html         # HTML entry point
+```
 
-This project is built with:
+## Features
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- 🍽️ **Menu Management**: Create and manage restaurant menus with categories and dishes
+- 📱 **QR Code Integration**: Generate QR codes for easy menu access
+- 💳 **Premium Tiers**: Multiple subscription levels with different features
+- 📊 **Analytics**: Track menu views and engagement
+- 🎨 **Customizable Themes**: Multiple design options for menus
+- 🖼️ **Image Management**: Upload and manage dish images
+- 🔗 **Short Links**: Create memorable short links for menus
+- 📧 **User Authentication**: Secure login and user management via Supabase Auth
 
-## How can I deploy this project?
+## Database
 
-Simply open [Lovable](https://lovable.dev/projects/1df200de-2f67-47b2-bd44-eb4e08ff6bf5) and click on Share -> Publish.
+The application uses Supabase PostgreSQL with the following main tables:
+- `restaurants` - Restaurant information
+- `menu_links` - Menu configurations and links
+- `dishes` - Dish information
+- `categories` - Menu categories
+- `subscriptions` - User subscription data
 
-## Can I connect a custom domain to my Lovable project?
+See `supabase/migrations/` for complete database schema.
 
-Yes, you can!
+## Deployment
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Supabase Setup
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+1. Create a new Supabase project
+2. Run the migrations in `supabase/migrations/` in order
+3. Deploy the Edge Functions from `supabase/functions/`
+4. Configure Storage buckets for images
+
+### Frontend Deployment
+
+Build the production bundle:
+```sh
+npm run build
+```
+
+The optimized files will be in the `dist/` directory, ready to deploy to any static hosting service (Vercel, Netlify, Cloudflare Pages, etc.).
+
+## Environment Variables
+
+Required environment variables:
+
+- `VITE_SUPABASE_URL` - Your Supabase project URL
+- `VITE_SUPABASE_PUBLISHABLE_KEY` - Your Supabase anonymous key
+- `VITE_SUPABASE_PROJECT_ID` - Your Supabase project ID
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit your changes: `git commit -am 'Add new feature'`
+4. Push to the branch: `git push origin feature/my-feature`
+5. Submit a pull request
+
+## License
+
+This project is private and proprietary.
